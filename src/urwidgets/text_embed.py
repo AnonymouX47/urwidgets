@@ -29,10 +29,21 @@ class TextEmbed(urwid.WidgetWrap):
     # - not trailing portions on subsequent lines
     _placeholder = re.compile("(\0\1*)")
 
-    def __init__(self, text: str, *args: urwid.Widget, **kwargs: urwid.Widget):
+    # A tail must occur at the beginning of a line but may be preceded by spaces
+    # when `align != "left"`
+    _placeholder_tail = re.compile("^( *)(\1+)")
+
+    def __init__(
+        self,
+        text: str,
+        *args: urwid.Widget,
+        align: str = "left",
+        wrap: str = "space",
+        **kwargs: urwid.Widget,
+    ) -> None:
         self._text = text
         new_text, self._widgets = self._format(text, *args, **kwargs)
-        super().__init__(urwid.Text(new_text))
+        super().__init__(urwid.Text(new_text, align, wrap))
 
     text = property(lambda self: self._text)
 
@@ -62,7 +73,11 @@ class TextEmbed(urwid.WidgetWrap):
             top += 1
 
             while tail:
-                partial_canv, tail = self._embed(next(text), widgets_iter, focus, tail)
+                try:
+                    line = next(text)
+                except StopIteration:  # wrap = "clip" / "elipsis"
+                    break
+                partial_canv, tail = self._embed(line, widgets_iter, focus, tail)
                 canvases.append((partial_canv, None, focus))
                 top += 1
 
@@ -96,14 +111,24 @@ class TextEmbed(urwid.WidgetWrap):
         canvases = []
 
         if tail:
+            # Since there is a line after the head, then it must contain the tail.
+            # Only one possible occurence of a tail per line,
+            # Might be preceded by padding spaces when `align != "left"`.
+            _, padding, tail_string, line = __class__._placeholder_tail.split(line)
+
+            if padding:
+                # Can use `len(padding)` since all characters should be spaces
+                canv = urwid.Text(padding).render((len(padding),))
+                canvases.append((canv, None, focus, len(padding)))
+
             cols, tail_canv = tail
-            tail_string, line = line[:cols], line[cols:]
             canv = urwid.CompositeCanvas(tail_canv)
             canv.pad_trim_left_right(cols - tail_canv.cols(), len(tail_string) - cols)
+            canvases.append((canv, None, focus, cols))
+
             if not line:
                 tail = (cols - len(tail_string), tail_canv) if len(tail_string) < cols else None
-                return canv, tail
-            canvases.append((canv, None, focus, cols))
+                return urwid.CanvasJoin(canvases), tail
             tail = None
 
         placeholder = __class__._placeholder
