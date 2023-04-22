@@ -1,7 +1,8 @@
-from itertools import islice
-from typing import Iterable, List, Optional, Tuple
-import urwid
 import re
+from itertools import islice
+from typing import Iterable, Optional, Tuple
+
+import urwid
 
 
 class TextEmbed(urwid.Text):
@@ -120,7 +121,7 @@ class TextEmbed(urwid.Text):
         self._embedded_canvs = [
             # Using `Text.pack()` instead of `match.start()` directly to account for
             # wide characters
-            (urwid.Text(line[:match.start()]).pack()[0], canv)
+            (urwid.Text(line[: match.start()]).pack()[0], canv)
             for line in map(bytes.decode, text)
             for match, (_, canv) in zip(
                 __class__._placeholder.finditer(line), embedded_canvs_iter
@@ -135,7 +136,9 @@ class TextEmbed(urwid.Text):
             for markup in markup:
                 if isinstance(markup, tuple) and isinstance(markup[0], int):
                     maxcols, widget = markup
-                    new_markup.append((len(embedded_canvs), "\0" + "\1" * (maxcols - 1)))
+                    new_markup.append(
+                        (len(embedded_canvs), "\0" + "\1" * (maxcols - 1))
+                    )
                     embedded_canvs.append((None, widget.render((maxcols, 1))))
                 else:
                     new_markup.append(markup)
@@ -169,7 +172,11 @@ class TextEmbed(urwid.Text):
             canvases.append((canv, None, focus, cols))
 
             if not line:
-                tail = (cols - len(tail_string), tail_canv) if len(tail_string) < cols else None
+                tail = (
+                    (cols - len(tail_string), tail_canv)
+                    if len(tail_string) < cols
+                    else None
+                )
                 return urwid.CanvasJoin(canvases), tail
             tail = None
 
