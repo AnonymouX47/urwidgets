@@ -38,9 +38,8 @@ class TextEmbed(urwid.WidgetWrap):
 
     def render(self, size, focus=False):
         text_canv = super().render(size)
-        cols, rows = self.pack(size)
-        canv = urwid.CompositeCanvas()
         text = (line.decode() for line in text_canv.text)
+        canvases = []
         placeholder = __class__._placeholder
         widgets_iter = iter(self._widgets)
         top = 0
@@ -54,25 +53,25 @@ class TextEmbed(urwid.WidgetWrap):
             if n_lines:
                 partial_canv = urwid.CompositeCanvas(text_canv)
                 partial_canv.trim(top, n_lines)
-                canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
+                canvases.append((partial_canv, None, focus))
                 top += n_lines
 
             partial_canv, tail = self._embed(line, widgets_iter, focus)
-            canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
+            canvases.append((partial_canv, None, focus))
             n_lines = 0
             top += 1
 
             while tail:
                 partial_canv, tail = self._embed(next(text), widgets_iter, focus, tail)
-                canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
+                canvases.append((partial_canv, None, focus))
                 top += 1
 
         if n_lines:
             partial_canv = urwid.CompositeCanvas(text_canv)
             partial_canv.trim(top, n_lines)
-            canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
+            canvases.append((partial_canv, None, focus))
 
-        return canv
+        return urwid.CanvasCombine(canvases)
 
     def set_text(self, text: str, *args: urwid.Widget, **kwargs: urwid.Widget) -> None:
         self._text = text
