@@ -1,9 +1,20 @@
+from itertools import islice
 from typing import Iterable, List, Optional, Tuple
 import urwid
 import re
 
 
 class TextEmbed(urwid.Text):
+    # A bug in urwid.Text/urwid.TextCanvas:
+    # When `wrap=clip, align=center` and there a line containing only one WORD
+    # (i.e a single sequence of non-space characters surrounded by "\n" in self.text)
+    # with a display attribute, at times, the line is rendered as an empty string when
+    # clipped.
+    # TextEmbed simply appends the line as-is.
+
+    # Used to guard the execution of `._update_canv_start_pos()`
+    _initialized = True
+    _layout_is_set = True
 
     # In case a placeholder gets wrapped:
     # - will match only the starting portion of a placeholder
@@ -14,19 +25,16 @@ class TextEmbed(urwid.Text):
     # when `align != "left"`
     _placeholder_tail = re.compile("^( *)(\1+)")
 
-    def render(self, size, focus=False):
-        text_canv = super().render(size)
-        text = (line.decode() for line in text_canv.text)
-        canvases = []
-        placeholder = __class__._placeholder
-        embedded_canvs_iter = iter(self._embedded_canvs)
-        top = 0
-        n_lines = 0
+    def __init__(self, *args, **kwargs):
+        # The order of setting layout, align and wrap is unknown
+        self._initialized = False
+        super().__init__(*args, **kwargs)
+        del self._initialized
+        self._update_canv_start_pos()
 
-        for line in text:
-            if not placeholder.search(line):
-                n_lines += 1
-                continue
+    def render(self, size, focus=False):
+        def append_text_lines():
+            nonlocal top
 
             if n_lines:
                 partial_canv = urwid.CompositeCanvas(text_canv)
@@ -34,30 +42,90 @@ class TextEmbed(urwid.Text):
                 canvases.append((partial_canv, None, focus))
                 top += n_lines
 
-            partial_canv, tail = self._embed(line, embedded_canvs_iter, focus)
-            canvases.append((partial_canv, None, focus))
-            n_lines = 0
-            top += 1
+        text_canv = super().render(size)
+        text = text_canv.text
+        canvases = []
+        placeholder = __class__._placeholder
+        embedded_canvs = self._embedded_canvs
+        tail = None
+        top = 0
+        n_lines = 0
+        clipped = self.wrap == "clip"
 
-            while tail:
-                try:
-                    line = next(text)
-                except StopIteration:  # wrap = "clip" / "elipsis"
-                    break
+        if clipped:
+            if self.align != "left":
+                left_trim = self.pack()[0] - size[0]
+                if self.align == "center":
+                    left_trim //= 2
+            text_canv_content = tuple(text_canv.content())
+        else:
+            embedded_canvs_iter = iter(embedded_canvs)
+
+        for row, line in enumerate(text):
+            line = line.decode()
+            if clipped:
+                if line.startswith("\1"):  # align != "left"
+                    canv_index = text_canv_content[row][0][0]
+                    canv_start, tail_canv = embedded_canvs[canv_index]
+                    tail = (canv_start + tail_canv.cols() - left_trim, tail_canv)
+                    embedded_canvs_iter = islice(embedded_canvs, canv_index + 1, None)
+                else:
+                    tail = None
+            if tail:
+                append_text_lines()  # if clipped, there might be lines
                 partial_canv, tail = self._embed(line, embedded_canvs_iter, focus, tail)
                 canvases.append((partial_canv, None, focus))
+                n_lines = 0
                 top += 1
-
-        if n_lines:
-            partial_canv = urwid.CompositeCanvas(text_canv)
-            partial_canv.trim(top, n_lines)
-            canvases.append((partial_canv, None, focus))
+            elif placeholder.search(line):
+                append_text_lines()
+                if clipped:
+                    for attr, *_ in text_canv_content[row]:
+                        if isinstance(attr, int):
+                            break
+                    embedded_canvs_iter = islice(embedded_canvs, attr, None)
+                partial_canv, tail = self._embed(line, embedded_canvs_iter, focus)
+                canvases.append((partial_canv, None, focus))
+                n_lines = 0
+                top += 1
+            else:
+                n_lines += 1
+        append_text_lines()
 
         return urwid.CanvasCombine(canvases)
+
+    def set_layout(self, *args, **kwargs):
+        # The order of setting layout, align and wrap is unknown
+        self._layout_is_set = False
+        super().set_layout(*args, **kwargs)
+        del self._layout_is_set
+        self._update_canv_start_pos()
 
     def set_text(self, markup):
         markup, self._embedded_canvs = self._substitute_widgets(markup)
         super().set_text(markup)
+        self._update_canv_start_pos()
+
+    def set_wrap_mode(self, mode):
+        super().set_wrap_mode(mode)
+        self._update_canv_start_pos()
+
+    def _update_canv_start_pos(self):
+        if not (self._initialized and self._layout_is_set and self.wrap == "clip"):
+            return
+        embedded_canvs_iter = iter(self._embedded_canvs)
+        # text is clipped per line and the position of embedded widgets on their
+        # respective lines is dependent on the alignment mode
+        text = super().render((self.pack()[0],)).text
+        self._embedded_canvs = [
+            # Using `Text.pack()` instead of `match.start()` directly to account for
+            # wide characters
+            (urwid.Text(line[:match.start()]).pack()[0], canv)
+            for line in map(bytes.decode, text)
+            for match, (_, canv) in zip(
+                __class__._placeholder.finditer(line), embedded_canvs_iter
+            )
+        ]
 
     @staticmethod
     def _substitute_widgets(markup):
@@ -67,8 +135,8 @@ class TextEmbed(urwid.Text):
             for markup in markup:
                 if isinstance(markup, tuple) and isinstance(markup[0], int):
                     maxcols, widget = markup
-                    embedded_canvs.append(widget.render((maxcols, 1)))
                     new_markup.append((len(embedded_canvs), "\0" + "\1" * (maxcols - 1)))
+                    embedded_canvs.append((None, widget.render((maxcols, 1))))
                 else:
                     new_markup.append(markup)
             return new_markup, embedded_canvs
@@ -78,7 +146,7 @@ class TextEmbed(urwid.Text):
     @staticmethod
     def _embed(
         line: str,
-        embedded_canvs: Iterable[urwid.Canvas],
+        embedded_canvs: Iterable[Tuple[int, urwid.Canvas]],
         focus: bool = False,
         tail: Optional[Tuple[int, urwid.Canvas]] = None,
     ) -> Tuple[urwid.CompositeCanvas, Optional[Tuple[int, urwid.Canvas]]]:
@@ -113,7 +181,7 @@ class TextEmbed(urwid.Text):
                 continue
 
             if placeholder.fullmatch(string):
-                canv = next(embedded_canvs_iter)
+                _, canv = next(embedded_canvs_iter)
                 # `len(string)`, in case the placeholder has been wrapped
                 canvases.append((canv, None, focus, len(string)))
                 if len(string) != canv.cols():
