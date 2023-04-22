@@ -3,26 +3,7 @@ import urwid
 import re
 
 
-class TextEmbed(urwid.WidgetWrap):
-
-    class _FormatWidget(urwid.WidgetWrap):
-        def __init__(self, widget: urwid.Widget, canv_list: List[urwid.Canvas]):
-            self._canv_list = canv_list
-            super().__init__(widget)
-
-        def __format__(self, spec):
-            try:
-                maxcols = int(spec)
-                assert maxcols > 0
-            except (ValueError, AssertionError):
-                raise ValueError(
-                    "Invalid widget 'maxcols' in replacement field "
-                    f"{len(self._canv_list)} (got: {spec!r})"
-                ) from None
-            else:
-                self._canv_list.append(self._w.render((maxcols, 1)))
-
-            return "\0" + "\1" * (maxcols - 1)
+class TextEmbed(urwid.Text):
 
     # In case a placeholder gets wrapped:
     # - will match only the starting portion of a placeholder
@@ -32,20 +13,6 @@ class TextEmbed(urwid.WidgetWrap):
     # A tail must occur at the beginning of a line but may be preceded by spaces
     # when `align != "left"`
     _placeholder_tail = re.compile("^( *)(\1+)")
-
-    def __init__(
-        self,
-        text: str,
-        *args: urwid.Widget,
-        align: str = "left",
-        wrap: str = "space",
-        **kwargs: urwid.Widget,
-    ) -> None:
-        self._text = text
-        new_text, self._embedded_canvs = self._format(text, *args, **kwargs)
-        super().__init__(urwid.Text(new_text, align, wrap))
-
-    text = property(lambda self: self._text)
 
     def render(self, size, focus=False):
         text_canv = super().render(size)
@@ -88,18 +55,25 @@ class TextEmbed(urwid.WidgetWrap):
 
         return urwid.CanvasCombine(canvases)
 
-    def set_text(self, text: str, *args: urwid.Widget, **kwargs: urwid.Widget) -> None:
-        self._text = text
-        new_text, self._embedded_canvs = self._format(text, *args, **kwargs)
-        self._w.set_text(new_text)
+    def set_text(self, markup):
+        markup, self._embedded_canvs = self._substitute_widgets(markup)
+        super().set_text(markup)
 
-    @classmethod
-    def _format(cls, text: str, *args: urwid.Widget, **kwargs: urwid.Widget) -> str:
-        embedded_canvs = []
-        args = [cls._FormatWidget(widget, embedded_canvs) for widget in args]
-        kwargs = {key: cls._FormatWidget(widget, embedded_canvs) for key, widget in kwargs.items()}
-
-        return text.format(*args, **kwargs), embedded_canvs
+    @staticmethod
+    def _substitute_widgets(markup):
+        if isinstance(markup, list):
+            embedded_canvs = []
+            new_markup = []
+            for markup in markup:
+                if isinstance(markup, tuple) and isinstance(markup[0], int):
+                    maxcols, widget = markup
+                    embedded_canvs.append(widget.render((maxcols, 1)))
+                    new_markup.append((len(embedded_canvs), "\0" + "\1" * (maxcols - 1)))
+                else:
+                    new_markup.append(markup)
+            return new_markup, embedded_canvs
+        else:
+            return markup, []
 
     @staticmethod
     def _embed(
