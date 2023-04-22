@@ -6,8 +6,8 @@ import re
 class TextEmbed(urwid.WidgetWrap):
 
     class _FormatWidget(urwid.WidgetWrap):
-        def __init__(self, widget: urwid.Widget, widget_list: List[urwid.Widget]):
-            self._widget_list = widget_list
+        def __init__(self, widget: urwid.Widget, canv_list: List[urwid.Canvas]):
+            self._canv_list = canv_list
             super().__init__(widget)
 
         def __format__(self, spec):
@@ -17,10 +17,10 @@ class TextEmbed(urwid.WidgetWrap):
             except (ValueError, AssertionError):
                 raise ValueError(
                     "Invalid widget 'maxcols' in replacement field "
-                    f"{len(self._widget_list)} (got: {spec!r})"
+                    f"{len(self._canv_list)} (got: {spec!r})"
                 ) from None
             else:
-                self._widget_list.append((maxcols, self._w))
+                self._canv_list.append(self._w.render((maxcols, 1)))
 
             return "\0" + "\1" * (maxcols - 1)
 
@@ -42,7 +42,7 @@ class TextEmbed(urwid.WidgetWrap):
         **kwargs: urwid.Widget,
     ) -> None:
         self._text = text
-        new_text, self._widgets = self._format(text, *args, **kwargs)
+        new_text, self._embedded_canvs = self._format(text, *args, **kwargs)
         super().__init__(urwid.Text(new_text, align, wrap))
 
     text = property(lambda self: self._text)
@@ -52,7 +52,7 @@ class TextEmbed(urwid.WidgetWrap):
         text = (line.decode() for line in text_canv.text)
         canvases = []
         placeholder = __class__._placeholder
-        widgets_iter = iter(self._widgets)
+        embedded_canvs_iter = iter(self._embedded_canvs)
         top = 0
         n_lines = 0
 
@@ -67,7 +67,7 @@ class TextEmbed(urwid.WidgetWrap):
                 canvases.append((partial_canv, None, focus))
                 top += n_lines
 
-            partial_canv, tail = self._embed(line, widgets_iter, focus)
+            partial_canv, tail = self._embed(line, embedded_canvs_iter, focus)
             canvases.append((partial_canv, None, focus))
             n_lines = 0
             top += 1
@@ -77,7 +77,7 @@ class TextEmbed(urwid.WidgetWrap):
                     line = next(text)
                 except StopIteration:  # wrap = "clip" / "elipsis"
                     break
-                partial_canv, tail = self._embed(line, widgets_iter, focus, tail)
+                partial_canv, tail = self._embed(line, embedded_canvs_iter, focus, tail)
                 canvases.append((partial_canv, None, focus))
                 top += 1
 
@@ -90,23 +90,23 @@ class TextEmbed(urwid.WidgetWrap):
 
     def set_text(self, text: str, *args: urwid.Widget, **kwargs: urwid.Widget) -> None:
         self._text = text
-        new_text, self._widgets = self._format(text, *args, **kwargs)
+        new_text, self._embedded_canvs = self._format(text, *args, **kwargs)
         self._w.set_text(new_text)
 
     @classmethod
     def _format(cls, text: str, *args: urwid.Widget, **kwargs: urwid.Widget) -> str:
-        widgets = []
-        args = [cls._FormatWidget(widget, widgets) for widget in args]
-        kwargs = {key: cls._FormatWidget(widget, widgets) for key, widget in kwargs.items()}
+        embedded_canvs = []
+        args = [cls._FormatWidget(widget, embedded_canvs) for widget in args]
+        kwargs = {key: cls._FormatWidget(widget, embedded_canvs) for key, widget in kwargs.items()}
 
-        return text.format(*args, **kwargs), widgets
+        return text.format(*args, **kwargs), embedded_canvs
 
     @staticmethod
     def _embed(
         line: str,
-        widgets: Iterable[Tuple[int, urwid.Widget]],
+        embedded_canvs: Iterable[urwid.Canvas],
         focus: bool = False,
-        tail: Optional[int, urwid.Canvas] = None,
+        tail: Optional[Tuple[int, urwid.Canvas]] = None,
     ) -> Tuple[urwid.CompositeCanvas, Optional[Tuple[int, urwid.Canvas]]]:
         canvases = []
 
@@ -132,19 +132,18 @@ class TextEmbed(urwid.WidgetWrap):
             tail = None
 
         placeholder = __class__._placeholder
-        widgets_iter = iter(widgets)
+        embedded_canvs_iter = iter(embedded_canvs)
 
         for string in placeholder.split(line):
             if not string:
                 continue
 
             if placeholder.fullmatch(string):
-                maxcols, widget = next(widgets_iter)
-                canv = widget.render((maxcols, 1))
+                canv = next(embedded_canvs_iter)
                 # `len(string)`, in case the placeholder has been wrapped
                 canvases.append((canv, None, focus, len(string)))
-                if len(string) != maxcols:
-                    tail = (maxcols - len(string), canv)
+                if len(string) != canv.cols():
+                    tail = (canv.cols() - len(string), canv)
             else:
                 w = urwid.Text(string)
                 # Should't use `len(string)` because of wide characters
