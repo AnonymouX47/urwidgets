@@ -1,4 +1,4 @@
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 import urwid
 import re
 
@@ -40,14 +40,13 @@ class TextEmbed(urwid.WidgetWrap):
         text_canv = super().render(size)
         cols, rows = self.pack(size)
         canv = urwid.CompositeCanvas()
-        text = text_canv.text
+        text = (line.decode() for line in text_canv.text)
         placeholder = __class__._placeholder
+        widgets_iter = iter(self._widgets)
         top = 0
         n_lines = 0
-        widgets_iter = iter(self._widgets)
 
         for line in text:
-            line = line.decode()
             if not placeholder.search(line):
                 n_lines += 1
                 continue
@@ -58,10 +57,15 @@ class TextEmbed(urwid.WidgetWrap):
                 canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
                 top += n_lines
 
-            partial_canv = self._embed(line, widgets_iter, focus)
+            partial_canv, tail = self._embed(line, widgets_iter, focus)
             canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
             n_lines = 0
             top += 1
+
+            while tail:
+                partial_canv, tail = self._embed(next(text), widgets_iter, focus, tail)
+                canv = urwid.CanvasCombine([(canv, None, focus), (partial_canv, None, focus)])
+                top += 1
 
         if n_lines:
             partial_canv = urwid.CompositeCanvas(text_canv)
@@ -88,9 +92,22 @@ class TextEmbed(urwid.WidgetWrap):
         line: str,
         widgets: Iterable[Tuple[int, urwid.Widget]],
         focus: bool = False,
-    ) -> urwid.CompositeCanvas:
-        placeholder = __class__._placeholder
+        tail: Optional[int, urwid.Canvas] = None,
+    ) -> Tuple[urwid.CompositeCanvas, Optional[Tuple[int, urwid.Canvas]]]:
         canvases = []
+
+        if tail:
+            cols, tail_canv = tail
+            tail_string, line = line[:cols], line[cols:]
+            canv = urwid.CompositeCanvas(tail_canv)
+            canv.pad_trim_left_right(cols - tail_canv.cols(), len(tail_string) - cols)
+            if not line:
+                tail = (cols - len(tail_string), tail_canv) if len(tail_string) < cols else None
+                return canv, tail
+            canvases.append((canv, None, focus, cols))
+            tail = None
+
+        placeholder = __class__._placeholder
         widgets_iter = iter(widgets)
 
         for string in placeholder.split(line):
@@ -100,8 +117,10 @@ class TextEmbed(urwid.WidgetWrap):
             if placeholder.fullmatch(string):
                 maxcols, widget = next(widgets_iter)
                 canv = widget.render((maxcols, 1))
-                # `len(string)` in case the placeholder has been split across lines
+                # `len(string)`, in case the placeholder has been wrapped
                 canvases.append((canv, None, focus, len(string)))
+                if len(string) != maxcols:
+                    tail = (maxcols - len(string), canv)
             else:
                 w = urwid.Text(string)
                 # Should't use `len(string)` because of wide characters
@@ -109,4 +128,4 @@ class TextEmbed(urwid.WidgetWrap):
                 canv = w.render((maxcols,))
                 canvases.append((canv, None, focus, maxcols))
 
-        return urwid.CanvasJoin(canvases)
+        return urwid.CanvasJoin(canvases), tail
