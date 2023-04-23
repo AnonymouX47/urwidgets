@@ -76,7 +76,11 @@ class TextEmbed(urwid.Text):
                     tail = None
             if tail:
                 append_text_lines()  # if clipped, there might be lines
-                partial_canv, tail = self._embed(line, embedded_canvs_iter, focus, tail)
+                line_canv = urwid.CompositeCanvas(text_canv)
+                line_canv.trim(top, 1)
+                partial_canv, tail = self._embed(
+                    line, line_canv, embedded_canvs_iter, focus, tail
+                )
                 canvases.append((partial_canv, None, focus))
                 n_lines = 0
                 top += 1
@@ -87,7 +91,11 @@ class TextEmbed(urwid.Text):
                         if isinstance(attr, int):
                             break
                     embedded_canvs_iter = islice(embedded_canvs, attr, None)
-                partial_canv, tail = self._embed(line, embedded_canvs_iter, focus)
+                line_canv = urwid.CompositeCanvas(text_canv)
+                line_canv.trim(top, 1)
+                partial_canv, tail = self._embed(
+                    line, line_canv, embedded_canvs_iter, focus
+                )
                 canvases.append((partial_canv, None, focus))
                 n_lines = 0
                 top += 1
@@ -151,27 +159,32 @@ class TextEmbed(urwid.Text):
     @staticmethod
     def _embed(
         line: str,
+        line_canv: urwid.CompositeCanvas,
         embedded_canvs: Iterable[Tuple[int, urwid.Canvas]],
         focus: bool = False,
         tail: Optional[Tuple[int, urwid.Canvas]] = None,
     ) -> Tuple[urwid.CompositeCanvas, Optional[Tuple[int, urwid.Canvas]]]:
         canvases = []
+        line_index = 0
 
         if tail:
-            # Since there is a line after the head, then it must contain the tail.
-            # Only one possible occurence of a tail per line,
-            # Might be preceded by padding spaces when `align != "left"`.
+            # - Since this is the line after the head, then it must contain [a part of]
+            #   the tail
+            # - Only one possible occurence of a tail per line
+            # - Might be preceded by padding spaces when `align != "left"`
             _, padding, tail_string, line = __class__._placeholder_tail.split(line)
 
             if padding:
                 # Can use `len(padding)` since all characters should be spaces
                 canv = urwid.Text(padding).render((len(padding),))
                 canvases.append((canv, None, focus, len(padding)))
+                line_index += len(padding)
 
             cols, tail_canv = tail
             canv = urwid.CompositeCanvas(tail_canv)
             canv.pad_trim_left_right(cols - tail_canv.cols(), len(tail_string) - cols)
             canvases.append((canv, None, focus, cols))
+            line_index += cols
 
             if not line:
                 tail = (
@@ -193,13 +206,18 @@ class TextEmbed(urwid.Text):
                 _, canv = next(embedded_canvs_iter)
                 # `len(string)`, in case the placeholder has been wrapped
                 canvases.append((canv, None, focus, len(string)))
+                line_index += len(string)
                 if len(string) != canv.cols():
                     tail = (canv.cols() - len(string), canv)
             else:
                 w = urwid.Text(string)
                 # Should't use `len(string)` because of wide characters
                 maxcols, _ = w.pack()
-                canv = w.render((maxcols,))
+                canv = urwid.CompositeCanvas(line_canv)
+                canv.pad_trim_left_right(
+                    -line_index, line_index + maxcols - line_canv.cols()
+                )
                 canvases.append((canv, None, focus, maxcols))
+                line_index += maxcols
 
         return urwid.CanvasJoin(canvases), tail
