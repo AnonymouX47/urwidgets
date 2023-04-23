@@ -1,3 +1,5 @@
+__all__ = ("TextEmbed",)
+
 import re
 from itertools import islice
 from typing import Iterable, Optional, Tuple
