@@ -8,13 +8,6 @@ import urwid
 
 
 class TextEmbed(urwid.Text):
-    # A bug in urwid.Text/urwid.TextCanvas:
-    # When `wrap=clip, align=center` and there a line containing only one WORD
-    # (i.e a single sequence of non-space characters surrounded by "\n" in self.text)
-    # with a display attribute, at times, the line is rendered as an empty string when
-    # clipped.
-    # TextEmbed simply appends the line as-is.
-
     # Used to guard the execution of `._update_canv_start_pos()`
     _initialized = True
     _layout_is_set = True
@@ -45,7 +38,7 @@ class TextEmbed(urwid.Text):
                 canvases.append((partial_canv, None, focus))
                 top += n_lines
 
-        text_canv = super().render(size)
+        text_canv = fix_text_canvas_attr(super().render(size))
         text = text_canv.text
         canvases = []
         placeholder = __class__._placeholder
@@ -221,3 +214,20 @@ class TextEmbed(urwid.Text):
                 line_index += maxcols
 
         return urwid.CanvasJoin(canvases), tail
+
+
+def fix_text_canvas_attr(canv: urwid.TextCanvas) -> urwid.TextCanvas:
+    """Workaround for a bug in in `urwid.text_layout.StandardTextLayout`.
+
+    When `wrap=clip, align=center` and there's a line starting with a markup that has
+    a display attribute, when the render width (maxcols) is one less than the line's
+    width (in screen columns, not characters), the line is rendered as an empty
+    string.
+
+    See https://github.com/urwid/urwid/issues/542.
+    """
+    for line in canv._attr:
+        if line[0] == (None, 0):
+            del line[0]
+
+    return canv
