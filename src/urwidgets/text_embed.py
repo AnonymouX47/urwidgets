@@ -178,7 +178,7 @@ class TextEmbed(urwid.Text):
                 tail_width - tail_canv.cols(), len(tail_string) - tail_width
             )
             canvases.append((canv, None, focus, len(tail_string)))
-            line_index += tail_width
+            line_index += len(tail_string)
 
             if not line:
                 tail = (
