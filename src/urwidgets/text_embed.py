@@ -50,9 +50,7 @@ class TextEmbed(urwid.Text):
 
         if clipped:
             if self.align != "left":
-                left_trim = self.pack()[0] - size[0]
-                if self.align == "center":
-                    left_trim //= 2
+                translation = self.get_line_translation(size[0])
             text_canv_content = tuple(text_canv.content())
         else:
             embedded_canvs_iter = iter(embedded_canvs)
@@ -63,7 +61,10 @@ class TextEmbed(urwid.Text):
                 if line.startswith("\1"):  # align != "left"
                     canv_index = text_canv_content[row][0][0]
                     canv_start, tail_canv = embedded_canvs[canv_index]
-                    tail = (canv_start + tail_canv.cols() - left_trim, tail_canv)
+                    left_trim = -translation[row][0][0]
+                    # the placeholder is clipped => left_trim > canv_start
+                    tail_width = tail_canv.cols() - (left_trim - canv_start)
+                    tail = (tail_width, tail_canv)
                     embedded_canvs_iter = islice(embedded_canvs, canv_index + 1, None)
                 else:
                     tail = None
@@ -117,15 +118,18 @@ class TextEmbed(urwid.Text):
     def _update_canv_start_pos(self):
         if not (self._initialized and self._layout_is_set and self.wrap == "clip"):
             return
+        # - Text is clipped per line.
+        # - Since the pad/trim amount in the translation (produced by
+        #   `StandardTextLayout.align_layout()`) is relative to the start of the line
+        #   wrt the layout width (maxcol), the position of an embedded widgets on its
+        #   respective line should be relative to the start of the line, not considering
+        #   alignment.
         embedded_canvs_iter = iter(self._embedded_canvs)
-        # text is clipped per line and the position of embedded widgets on their
-        # respective lines is dependent on the alignment mode
-        text = super().render((self.pack()[0],)).text
         self._embedded_canvs = [
             # Using `Text.pack()` instead of `match.start()` directly to account for
             # wide characters
             (urwid.Text(line[: match.start()]).pack()[0], canv)
-            for line in map(bytes.decode, text)
+            for line in self.text.splitlines()
             for match, (_, canv) in zip(
                 __class__._placeholder.finditer(line), embedded_canvs_iter
             )
@@ -176,7 +180,7 @@ class TextEmbed(urwid.Text):
             cols, tail_canv = tail
             canv = urwid.CompositeCanvas(tail_canv)
             canv.pad_trim_left_right(cols - tail_canv.cols(), len(tail_string) - cols)
-            canvases.append((canv, None, focus, cols))
+            canvases.append((canv, None, focus, len(tail_string)))
             line_index += cols
 
             if not line:
