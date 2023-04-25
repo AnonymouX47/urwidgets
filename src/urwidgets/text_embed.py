@@ -110,19 +110,35 @@ class TextEmbed(urwid.Text):
 
     @staticmethod
     def _substitute_widgets(markup):
-        if isinstance(markup, list):
-            embedded = []
-            new_markup = []
-            for markup in markup:
-                if isinstance(markup, tuple) and isinstance(markup[0], int):
-                    width, widget = markup
-                    new_markup.append((len(embedded), "\0" + "\1" * (width - 1)))
-                    embedded.append((widget, width, 0))
-                else:
-                    new_markup.append(markup)
-            return new_markup, embedded
-        else:
-            return markup, []
+        def recurse_markup(attr, markup):
+            if isinstance(markup, list):
+                for markup in markup:
+                    recurse_markup(attr, markup)
+            elif isinstance(markup, tuple):
+                if len(markup) != 2:
+                    raise urwid.TagMarkupException(
+                        "Tuples must be in the form `(attribute, tagmarkup)` "
+                        f"(got: {markup!r})"
+                    )
+                recurse_markup(*markup)
+            elif isinstance(markup, urwid.Widget):
+                if not isinstance(attr, int):
+                    raise TypeError(
+                        "Invalid type for embedded widget width "
+                        f"(got: {type(attr).__name__!r})"
+                    )
+                if attr <= 0:
+                    raise ValueError(f"Invalid widget width (got: {attr!r})")
+                new_markup.append((len(embedded), "\0" + "\1" * (attr - 1)))
+                embedded.append((markup, attr, 0))
+            else:
+                new_markup.append(markup if attr is None else (attr, markup))
+
+        embedded = []
+        new_markup = []
+        recurse_markup(None, markup)
+
+        return new_markup, embedded
 
     @staticmethod
     def _embed(
