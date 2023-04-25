@@ -8,11 +8,6 @@ import urwid
 
 
 class TextEmbed(urwid.Text):
-    # Used to prevent multiple executions of `._update_widget_start_pos()` while
-    # initializing or setting layout
-    _initialized = True
-    _setting_layout = False
-
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
     # head of a placeholder not tails on subsequent lines
     _placeholder_pattern = re.compile("(\0\1*)")
@@ -20,12 +15,6 @@ class TextEmbed(urwid.Text):
     # A tail must occur at the beginning of a line but may be preceded by padding
     # spaces when `align != "left"` and `wrap != "clip"`
     _tail_pattern = re.compile("^( *)(\1+)")
-
-    def __init__(self, *args, **kwargs):
-        self._initialized = False
-        super().__init__(*args, **kwargs)
-        del self._initialized
-        self._update_widget_start_pos()
 
     def render(self, size, focus=False):
         def append_text_lines():
@@ -97,24 +86,12 @@ class TextEmbed(urwid.Text):
 
         return urwid.CanvasCombine(canvases)
 
-    def set_layout(self, *args, **kwargs):
-        self._setting_layout = True
-        super().set_layout(*args, **kwargs)
-        del self._setting_layout
-        self._update_widget_start_pos()
-
     def set_text(self, markup):
         markup, self._embedded = self._substitute_widgets(markup)
         super().set_text(markup)
         self._update_widget_start_pos()
 
-    def set_wrap_mode(self, mode):
-        super().set_wrap_mode(mode)
-        self._update_widget_start_pos()
-
     def _update_widget_start_pos(self):
-        if not (self._initialized and not self._setting_layout and self.wrap == "clip"):
-            return
         # - Text is clipped per line.
         # - Since the pad/trim amount in the translation (produced by
         #   `StandardTextLayout.align_layout()`) is relative to the start of the line
