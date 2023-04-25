@@ -16,6 +16,18 @@ class TextEmbed(urwid.Text):
     # spaces when `align != "left"` and `wrap != "clip"`
     _tail_pattern = re.compile("^( *)(\1+)")
 
+    embedded = property(
+        lambda self: [(widget, width) for widget, width, _ in self._embedded],
+        doc="""Embedded widgets.
+
+        Returns:
+            A list of all embedded widgets and their respective widths, in the same
+            order in which they were given in the text markup.
+
+        :type: List[Tuple[urwid.Widget, int]]
+        """,
+    )
+
     def render(self, size, focus=False):
         def append_text_lines():
             nonlocal top
