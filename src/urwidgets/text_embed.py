@@ -58,7 +58,8 @@ class TextEmbed(urwid.Text):
                 else:
                     tail = None
             if tail:
-                append_text_lines()  # if clipped, there might be lines
+                if clipped:
+                    append_text_lines()
                 line_canv = urwid.CompositeCanvas(text_canv)
                 line_canv.trim(top, 1)
                 partial_canv, tail = self._embed(
@@ -166,9 +167,7 @@ class TextEmbed(urwid.Text):
 
             tail_width, tail_canv = tail
             canv = urwid.CompositeCanvas(tail_canv)
-            canv.pad_trim_left_right(
-                tail_width - tail_canv.cols(), len(tail_string) - tail_width
-            )
+            canv.pad_trim_left_right(tail_width - tail_canv.cols(), 0)
             canvases.append((canv, None, focus, len(tail_string)))
             line_index += len(tail_string)
 
@@ -199,9 +198,7 @@ class TextEmbed(urwid.Text):
                 # Should't use `len(part)` because of wide characters
                 maxcol = urwid.Text(part).pack()[0]
                 canv = urwid.CompositeCanvas(line_canv)
-                canv.pad_trim_left_right(
-                    -line_index, line_index + maxcol - line_canv.cols()
-                )
+                canv.pad_trim_left_right(-line_index, 0)
                 canvases.append((canv, None, focus, maxcol))
                 line_index += maxcol
 
