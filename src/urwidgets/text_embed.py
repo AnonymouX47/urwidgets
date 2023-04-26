@@ -77,6 +77,11 @@ class TextEmbed(urwid.Text):
         return super().get_text()
 
     def render(self, size, focus=False):
+        text_canv = fix_text_canvas_attr(super().render(size))
+        embedded = self._uw_embedded
+        if not embedded:
+            return text_canv
+
         def append_text_lines():
             nonlocal top
 
@@ -86,11 +91,9 @@ class TextEmbed(urwid.Text):
                 canvases.append((partial_canv, None, focus))
                 top += n_lines
 
-        text_canv = fix_text_canvas_attr(super().render(size))
         text = text_canv.text
         canvases = []
         placeholder_pattern = __class__._uw_placeholder_pattern
-        embedded = self._uw_embedded
         tail = None
         top = 0
         n_lines = 0
