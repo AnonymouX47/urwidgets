@@ -133,7 +133,7 @@ class TextEmbed(urwid.Text):
     def render(
         self, size: Tuple[int,], focus: bool = False
     ) -> Union[urwid.TextCanvas, urwid.CompositeCanvas]:
-        text_canv = fix_text_canvas_attr(super().render(size))
+        text_canv = fix_text_canvas_attr(super().render(size, focus))
         embedded = self._uw_embedded
         if not embedded:
             return text_canv
@@ -168,7 +168,7 @@ class TextEmbed(urwid.Text):
                 if line.startswith("\1"):  # align != "left"
                     widget_index = text_canv_content[row_index][0][0]
                     widget, width, start_pos = embedded[widget_index]
-                    tail_canv = widget.render((width, 1))
+                    tail_canv = widget.render((width, 1), focus)
                     left_trim = -translation[row_index][0][0]
                     # the placeholder is clipped => left_trim > start_pos
                     tail_width = width - (left_trim - start_pos)
@@ -345,7 +345,7 @@ class TextEmbed(urwid.Text):
 
             if padding:
                 # Can use `len(padding)` since all characters should be spaces
-                canv = urwid.Text(padding).render((len(padding),))
+                canv = urwid.Text(padding).render((len(padding),), focus)
                 canvases.append((canv, None, focus, len(padding)))
                 line_index += len(padding)
 
@@ -372,7 +372,7 @@ class TextEmbed(urwid.Text):
 
             if placeholder_pattern.fullmatch(part):
                 widget, width, _ = next(embedded_iter)
-                canv = widget.render((width, 1))
+                canv = widget.render((width, 1), focus)
                 # `len(part)`, in case the placeholder was wrapped
                 canvases.append((canv, None, focus, len(part)))
                 line_index += len(part)
