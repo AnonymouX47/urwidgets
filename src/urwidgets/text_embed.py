@@ -193,6 +193,8 @@ class TextEmbed(urwid.Text):
                         "Invalid type for embedded widget width "
                         f"(got: {type(attr).__name__!r})"
                     )
+                if "box" not in markup.sizing():
+                    raise ValueError(f"Not a box widget (got: {markup!r})")
                 if attr <= 0:
                     raise ValueError(f"Invalid widget width (got: {attr!r})")
                 new_markup.append((len(embedded), "\0" + "\1" * (attr - 1)))
