@@ -154,6 +154,13 @@ class TextEmbed(urwid.Text):
         super().set_text(markup)
         self._uw_update_widget_start_pos()
 
+    def set_wrap_mode(self, mode: str) -> None:
+        if mode == "ellipsis":
+            raise NotImplementedError("Wrap mode 'ellipsis' is not implemented.")
+        super().set_wrap_mode(mode)
+
+    wrap = property(lambda self: super().wrap, set_wrap_mode)
+
     def _uw_update_widget_start_pos(self):
         if not self._uw_embedded:
             return
