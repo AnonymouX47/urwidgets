@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 __all__ = ("TextEmbed",)
 
 import re
 from itertools import islice
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple, Union
 
 import urwid
 
@@ -16,6 +18,16 @@ class TextEmbed(urwid.Text):
     # spaces when `align != "left"` and `wrap != "clip"`
     _tail_pattern = re.compile("^( *)(\1+)")
 
+    attrib = property(
+        lambda self: super().attrib,
+        doc="""Run-length encoding of display attributes of the widget's content.
+
+        :type: List[Tuple[Union[None, str, bytes, int], int]]
+
+        See the description of the return value of :py:meth:`get_text`.
+        """,
+    )
+
     embedded = property(
         lambda self: [(widget, width) for widget, width, _ in self._embedded],
         doc="""Embedded widgets.
@@ -27,6 +39,39 @@ class TextEmbed(urwid.Text):
         :type: List[Tuple[urwid.Widget, int]]
         """,
     )
+
+    text = property(
+        lambda self: super().text,
+        doc="""Raw text content of the widget.
+
+        :type: Union[str, bytes]
+
+        See the description of the return value of :py:meth:`get_text`.
+        """,
+    )
+
+    def get_text(
+        self,
+    ) -> Tuple[Union[str, bytes], List[Tuple[Union[None, str, bytes, int], int]]]:
+        """Returns a representation of the widget's content.
+
+        Returns:
+            A tuple ``(text, attrib)``, where:
+
+            - *text* is the raw text content of the widget.
+
+              Each embedded widget is represented by a substring starting with a
+              `"\\x00"` character followed by zero or more `"\\x01"` characters,
+              with length equal to the widget's width.
+
+            - *attrib* is the run-length encoding of display attributes.
+
+              Any entry containing a display attribute of the ``int`` type (e.g
+              ``(1, 4)``) denotes an embedded widget, where the display attirbute is
+              the index of the widget within the :py:data:`embedded` widgets list and
+              the run length is the width of the widget.
+        """
+        return super().get_text()
 
     def render(self, size, focus=False):
         def append_text_lines():
@@ -117,7 +162,7 @@ class TextEmbed(urwid.Text):
             # Using `Text.pack()` instead of `match.start()` directly to account for
             # wide characters
             (widget, width, urwid.Text(line[: match.start()]).pack()[0])
-            for line in self.text.splitlines()
+            for line in super().get_text()[0].splitlines()
             for match, (widget, width, _) in zip(find_placeholders(line), embedded_iter)
         ]
 
