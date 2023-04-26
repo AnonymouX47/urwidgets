@@ -44,7 +44,7 @@ class TextEmbed(urwid.Text):
         lambda self: super().text,
         doc="""Raw text content of the widget.
 
-        :type: Union[str, bytes]
+        :type: str
 
         See the description of the return value of :py:meth:`get_text`.
         """,
@@ -52,7 +52,7 @@ class TextEmbed(urwid.Text):
 
     def get_text(
         self,
-    ) -> Tuple[Union[str, bytes], List[Tuple[Union[None, str, bytes, int], int]]]:
+    ) -> Tuple[str, List[Tuple[Union[None, str, bytes, int], int]]]:
         """Returns a representation of the widget's content.
 
         Returns:
@@ -190,6 +190,10 @@ class TextEmbed(urwid.Text):
                 new_markup.append((len(embedded), "\0" + "\1" * (attr - 1)))
                 embedded.append((markup, attr, 0))
             else:
+                # Normalize text type to `str` since other parts of this class use
+                # and expect `str`
+                if isinstance(markup, bytes):
+                    markup = markup.decode()
                 new_markup.append(markup if attr is None else (attr, markup))
 
         embedded = []
