@@ -150,6 +150,9 @@ class TextEmbed(urwid.Text):
         self._update_widget_start_pos()
 
     def _update_widget_start_pos(self):
+        if not self._embedded:
+            return
+
         # - Text is clipped per line.
         # - Since the pad/trim amount in the translation (produced by
         #   `StandardTextLayout.align_layout()`) is relative to the start of the line
