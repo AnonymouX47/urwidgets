@@ -11,8 +11,60 @@ import urwid
 # NOTE: Any new "private" attribute of any subclass of an urwid class should be
 # prepended with "_uw" to avoid clashes with names used by urwid itself.
 
+# I guess this typing thing ain't my thing... probably won't ever come back to this.
+# I'd rather spend my time on something functional.
+"""
+_Markup1 = Union[str, bytes]
+_Markup2 = Tuple[int, urwid.Widget]
+_Markup3 = Tuple[_Markup1, Union[_Markup1, _Markup2, "_Markup3"]]
+Markup = Union[_Markup1, _Markup2, "Markup"]
+"""
+
 
 class TextEmbed(urwid.Text):
+    """A text widget within which other widgets may be embedded.
+
+    This is an extension of the ``urwid.Text`` widget. Every feature and interface of
+    ``Text`` is supported and works essentially the same, **except for the
+    "ellipsis" wrap mode** which is currently not implemented.
+    Text markup format is essentially the same, except when embedding widgets.
+
+    **Embedding Widgets**
+        A widget is embedded by specifying it as a markup element with an **integer
+        display attribute**, where the display attribute is the number of screen
+        columns the widget should occupy.
+
+        Examples:
+
+        >>> # w1 spans 2 columns
+        >>> TextEmbed(["This widget (", (2, w1), ") spans two columns"])
+        >>> # w1 and w2 span 2 columns
+        >>> TextEmbed(["These widgets (", (2, [w1, w2]), ") span two columns each"])
+        >>> # w1 and w2 span 2 columns, the text in-between has no display attribute
+        >>> TextEmbed([(2, [w1, (None, "and"), w2]), " span two columns each"])
+        >>> # w1 and w2 span 2 columns, text in the middle is red
+        >>> TextEmbed((2, [w1, ("red", " i am red "), w2]))
+        >>> # w1 and w3 span 2 columns, w2 spans 5 columns
+        >>> TextEmbed((2, [w1, (5, w2), w3]))
+
+        Visible embedded widgets are always re-rendered whenever the ``TextEmbed``
+        widget is rendered. Hence, this allows for dynamically chainging parts of text
+        without updating the entire text widget. Going a step further, embeddded widgets
+        can be swapped by using ``urwid.WidgetPlaceholder``.
+
+        NOTE:
+            - Every embedded widget must be a box widget and is always rendered with
+              size ``(width, 1)``.  ``urwid.Filler`` can be used to wrap flow widgets.
+            - Each embedded widgets are treated as a single WORD (i.e containing no
+              whitespace). Therefore, consecutive embedded widgets are also treated as
+              a single WORD. This affects the "space" wrap mode.
+
+    Raises:
+        TypeError: A widget markup element has a non-integer display attribute.
+        ValueError: A widget doesn't support box sizing.
+        ValueError: A widget has a non-positive width (display attribute).
+    """
+
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
     # head of a placeholder not tails on subsequent lines
     _uw_placeholder_pattern = re.compile("(\0\1*)")
@@ -27,7 +79,8 @@ class TextEmbed(urwid.Text):
 
         :type: List[Tuple[Union[None, str, bytes, int], int]]
 
-        See the description of the return value of :py:meth:`get_text`.
+        See the description of the second item in the return value of
+        :py:meth:`get_text`.
         """,
     )
 
@@ -49,7 +102,8 @@ class TextEmbed(urwid.Text):
 
         :type: str
 
-        See the description of the return value of :py:meth:`get_text`.
+        See the description of the first item in the return value of
+        :py:meth:`get_text`.
         """,
     )
 
@@ -71,12 +125,14 @@ class TextEmbed(urwid.Text):
 
               Any entry containing a display attribute of the ``int`` type (e.g
               ``(1, 4)``) denotes an embedded widget, where the display attirbute is
-              the index of the widget within the :py:data:`embedded` widgets list and
+              the index of the widget within the :py:attr:`embedded` widgets list and
               the run length is the width of the widget.
         """
         return super().get_text()
 
-    def render(self, size, focus=False):
+    def render(
+        self, size: Tuple[int,], focus: bool = False
+    ) -> Union[urwid.TextCanvas, urwid.CompositeCanvas]:
         text_canv = fix_text_canvas_attr(super().render(size))
         embedded = self._uw_embedded
         if not embedded:
@@ -152,7 +208,11 @@ class TextEmbed(urwid.Text):
 
         return urwid.CanvasCombine(canvases)
 
-    def set_text(self, markup):
+    def set_text(self, markup) -> None:
+        """Sets the widget's content.
+
+        Also supports widget markup elements. See the class description.
+        """
         markup, self._uw_embedded = self._uw_substitute_widgets(markup)
         super().set_text(markup)
         self._uw_update_widget_start_pos()
@@ -164,7 +224,8 @@ class TextEmbed(urwid.Text):
 
     wrap = property(lambda self: super().wrap, set_wrap_mode)
 
-    def _uw_update_widget_start_pos(self):
+    def _uw_update_widget_start_pos(self) -> None:
+        """Updates the start position of embedded widgets on their respective lines."""
         if not self._uw_embedded:
             return
 
@@ -186,7 +247,20 @@ class TextEmbed(urwid.Text):
 
     @staticmethod
     def _uw_substitute_widgets(markup):
-        def recurse_markup(attr, markup):
+        """Extracts embedded widgets from *markup* and replace widget markup elements
+        with placeholders.
+
+        Returns:
+            A tuple containing:
+
+            - The given markup flattened and with all widget elements replaced by
+              placeholders.
+            - A list of ``(widget, width, start_position)`` tuples describing the
+              embedded widgets, where *start_position* is initialized to zero and
+              later updated by :py:meth:`_uw_update_widget_start_pos`.
+        """
+
+        def recurse_markup(attr: Union[str, bytes, int], markup) -> None:
             if isinstance(markup, list):
                 for markup in markup:
                     recurse_markup(attr, markup)
@@ -230,6 +304,35 @@ class TextEmbed(urwid.Text):
         focus: bool = False,
         tail: Optional[Tuple[int, urwid.Canvas]] = None,
     ) -> Tuple[urwid.CompositeCanvas, Optional[Tuple[int, urwid.Canvas]]]:
+        """Replaces widget placeholders in a line with with the widgets' contents.
+
+        Args:
+            line: A line of the original text canvas.
+            line_canv: A canvas corresponding to *line*.
+            embedded_iter: An iterator of ``(widget, width, start_position)`` tuples
+              in the same order as :py:attr:`embedded`, where *start_position* is as
+              determined by :py:meth:`_uw_update_widget_start_pos`.
+            focus: As in :py:meth:`render`.
+            tail: The description of the "tail" of an embedded widget that is the first
+              part of the line ``(tail_width, tail_canv)``, if it was wrapped/clipped,
+              where:
+
+              - *tail_width* is the width of the remaining (unused) portion of the
+                widget's canvas content towards it's right end.
+              - *tail_canv* is the original rendered canvas of the widget, unmodified.
+
+              OR ``None`` if a widget is not the first part of the line.
+
+        Returns:
+            A tuple containing:
+
+            - A ``CompositeCanvas`` containing the separate parts from the original
+              text canvas and the embedded widgets' canvases.
+            - The description of the "tail" of an embedded widget that is the last part
+              of the line ``(tail_width, tail_canv)`` (see the description of *tail*
+              above), if it was wrapped/clipped OR ``None`` if it wasn't wrapped/clipped
+              or a widget is not the last part of the line.
+        """
         canvases = []
         line_index = 0
 
