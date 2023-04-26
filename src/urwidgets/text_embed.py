@@ -8,15 +8,18 @@ from typing import Iterator, List, Optional, Tuple, Union
 
 import urwid
 
+# NOTE: Any new "private" attribute of any subclass of an urwid class should be
+# prepended with "_uw" to avoid clashes with names used by urwid itself.
+
 
 class TextEmbed(urwid.Text):
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
     # head of a placeholder not tails on subsequent lines
-    _placeholder_pattern = re.compile("(\0\1*)")
+    _uw_placeholder_pattern = re.compile("(\0\1*)")
 
     # A tail must occur at the beginning of a line but may be preceded by padding
     # spaces when `align != "left"` and `wrap != "clip"`
-    _tail_pattern = re.compile("^( *)(\1+)")
+    _uw_tail_pattern = re.compile("^( *)(\1+)")
 
     attrib = property(
         lambda self: super().attrib,
@@ -29,7 +32,7 @@ class TextEmbed(urwid.Text):
     )
 
     embedded = property(
-        lambda self: [(widget, width) for widget, width, _ in self._embedded],
+        lambda self: [(widget, width) for widget, width, _ in self._uw_embedded],
         doc="""Embedded widgets.
 
         Returns:
@@ -86,8 +89,8 @@ class TextEmbed(urwid.Text):
         text_canv = fix_text_canvas_attr(super().render(size))
         text = text_canv.text
         canvases = []
-        placeholder_pattern = __class__._placeholder_pattern
-        embedded = self._embedded
+        placeholder_pattern = __class__._uw_placeholder_pattern
+        embedded = self._uw_embedded
         tail = None
         top = 0
         n_lines = 0
@@ -119,7 +122,7 @@ class TextEmbed(urwid.Text):
                     append_text_lines()
                 line_canv = urwid.CompositeCanvas(text_canv)
                 line_canv.trim(top, 1)
-                partial_canv, tail = self._embed(
+                partial_canv, tail = self._uw_embed(
                     line, line_canv, embedded_iter, focus, tail
                 )
                 canvases.append((partial_canv, None, focus))
@@ -134,7 +137,9 @@ class TextEmbed(urwid.Text):
                     embedded_iter = islice(embedded, attr, None)
                 line_canv = urwid.CompositeCanvas(text_canv)
                 line_canv.trim(top, 1)
-                partial_canv, tail = self._embed(line, line_canv, embedded_iter, focus)
+                partial_canv, tail = self._uw_embed(
+                    line, line_canv, embedded_iter, focus
+                )
                 canvases.append((partial_canv, None, focus))
                 n_lines = 0
                 top += 1
@@ -145,12 +150,12 @@ class TextEmbed(urwid.Text):
         return urwid.CanvasCombine(canvases)
 
     def set_text(self, markup):
-        markup, self._embedded = self._substitute_widgets(markup)
+        markup, self._uw_embedded = self._uw_substitute_widgets(markup)
         super().set_text(markup)
-        self._update_widget_start_pos()
+        self._uw_update_widget_start_pos()
 
-    def _update_widget_start_pos(self):
-        if not self._embedded:
+    def _uw_update_widget_start_pos(self):
+        if not self._uw_embedded:
             return
 
         # - Text is clipped per line.
@@ -159,9 +164,9 @@ class TextEmbed(urwid.Text):
         #   wrt the layout width (maxcol), the position of an embedded widgets on its
         #   respective line should be relative to the start of the line, not considering
         #   alignment.
-        find_placeholders = __class__._placeholder_pattern.finditer
-        embedded_iter = iter(self._embedded)
-        self._embedded = [
+        find_placeholders = __class__._uw_placeholder_pattern.finditer
+        embedded_iter = iter(self._uw_embedded)
+        self._uw_embedded = [
             # Using `Text.pack()` instead of `match.start()` directly to account for
             # wide characters
             (widget, width, urwid.Text(line[: match.start()]).pack()[0])
@@ -170,7 +175,7 @@ class TextEmbed(urwid.Text):
         ]
 
     @staticmethod
-    def _substitute_widgets(markup):
+    def _uw_substitute_widgets(markup):
         def recurse_markup(attr, markup):
             if isinstance(markup, list):
                 for markup in markup:
@@ -206,7 +211,7 @@ class TextEmbed(urwid.Text):
         return new_markup, embedded
 
     @staticmethod
-    def _embed(
+    def _uw_embed(
         line: str,
         line_canv: urwid.CompositeCanvas,
         embedded_iter: Iterator[Tuple[urwid.Widget, int, int]],
@@ -221,7 +226,7 @@ class TextEmbed(urwid.Text):
             #   the tail
             # - Only one possible occurence of a tail per line
             # - Might be preceded by padding spaces when `align != "left"`
-            _, padding, tail_string, line = __class__._tail_pattern.split(line)
+            _, padding, tail_string, line = __class__._uw_tail_pattern.split(line)
 
             if padding:
                 # Can use `len(padding)` since all characters should be spaces
@@ -244,7 +249,7 @@ class TextEmbed(urwid.Text):
                 return urwid.CanvasJoin(canvases), tail
             tail = None
 
-        placeholder_pattern = __class__._placeholder_pattern
+        placeholder_pattern = __class__._uw_placeholder_pattern
 
         for part in placeholder_pattern.split(line):
             if not part:
