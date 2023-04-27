@@ -6,9 +6,10 @@ A collection of widgets for urwid (https://urwid.org)
 Copyright (c) 2023, Toluwaleke Ogundipe <anonymoux47@gmail.com>
 """
 
-__all__ = ("TextEmbed",)
+__all__ = ("Hyperlink", "TextEmbed")
 __author__ = "Toluwaleke Ogundipe"
 
+from .hyperlink import Hyperlink
 from .text_embed import TextEmbed
 
 version_info = (0, 1, 0, "dev")
