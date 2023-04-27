@@ -20,6 +20,47 @@ valid_byte_range = range(32, 127)
 
 
 class Hyperlink(urwid.WidgetWrap):
+    """A widget containing hyperlinked text.
+
+    Args:
+        uri: The target of the hyperlink in URI (Uniform Resource Identifier)-encoded
+          form.
+
+          May be a web address (``http://...`` or ``https://...``), FTP address
+          (``ftp://...``), local file (``file://...``), e-mail address (``mailto:``),
+          etc.
+
+          Every byte of this string, after being encoded, must be within the range
+          ``32`` to ``126`` (both inclusive).
+
+        attr: Display attribute of the hyperlink text.
+        text: Alternative hyperlink text. If not given or ``None``, the URI itself is
+          used. Must be a single-line string.
+
+    Raises:
+        TypeError: An argument is of an unexpected type.
+        ValueError: An argument is of an expected type but of an unexpected value
+
+    This widget always renders a single line. If the widget is rendered with a width
+    less than the length of the hyperlink text, it is clipped at the right end with an
+    ellipsis (\u2026) appended. On the other hand, if rendered with a width greater,
+    it is padded with spaces on the right end.
+
+    This widget is intended to be embedded in a :py:class:`~urwidgets.TextEmbed` widget
+    to combine it with pure text or other widgets but may also be used otherwise.
+
+    This widget utilizes the ``OSC 8`` escape sequence implemented by a sizable number
+    of mainstream terminal emulators. It utilizes the escape sequence in such a way that
+    hyperlinks right next to one another should be detected, highlighted and treated as
+    separate by any terminal emulator that correctly implements the feature. Also, if a
+    hyperlink is wrapped or clipped, it shouldn't break.
+
+    SEEALSO:
+        - OSC 8 Specification:
+          https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+        - OSC 8 adoption in terminal emulators: https://github.com/Alhadis/OSC8-Adoption
+    """
+
     no_cache = ["render"]
 
     def __init__(
