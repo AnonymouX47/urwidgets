@@ -69,16 +69,6 @@ class Hyperlink(urwid.WidgetWrap):
         attr: Union[None, str, bytes, urwid.AttrSpec] = None,
         text: Optional[str] = None,
     ) -> None:
-        if not isinstance(uri, str):
-            raise TypeError(f"Invalid type for 'uri' (got: {type(text).__name__!r})")
-        if not uri:
-            raise ValueError("URI is empty")
-        invalid_bytes = frozenset(uri.encode()).difference(valid_byte_range)
-        if invalid_bytes:
-            raise ValueError(
-                f"Invalid byte 0x{invalid_bytes.pop():02x} found in URI: {uri!r}"
-            )
-
         if text is not None:
             if not isinstance(text, str):
                 raise TypeError(
@@ -87,11 +77,39 @@ class Hyperlink(urwid.WidgetWrap):
             if "\n" in text:
                 raise ValueError(f"'text' spans multiple lines (got: {text!r})")
 
+        self._uw_set_uri(uri)
         super().__init__(urwid.Text((attr, text or uri), "left", "ellipsis"))
-        self.uri = uri
 
     def render(self, size: Tuple[int,], focus: bool = False) -> urwid.HyperlinkCanvas:
-        return HyperlinkCanvas(self.uri, self._w.render(size, focus))
+        return HyperlinkCanvas(self._uw_uri, self._w.render(size, focus))
+
+    def _uw_set_uri(self, uri: str):
+        if not isinstance(uri, str):
+            raise TypeError(f"Invalid type for 'uri' (got: {type(uri).__name__!r})")
+        if not uri:
+            raise ValueError("URI is empty")
+        invalid_bytes = frozenset(uri.encode()).difference(valid_byte_range)
+        if invalid_bytes:
+            raise ValueError(
+                f"Invalid byte '\\x{tuple(invalid_bytes)[0]:02x}' found in URI: {uri!r}"
+            )
+        self._uw_uri = uri
+
+    uri = property(
+        lambda self: self._uw_uri,
+        _uw_set_uri,
+        doc="""The target of the hyperlink.
+
+        :type: str
+
+        GET:
+            Returns the target.
+
+        SET:
+            Sets the target.
+        """,
+    )
+
 
 
 class HyperlinkCanvas(urwid.Canvas):
