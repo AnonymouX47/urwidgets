@@ -47,10 +47,11 @@ class TextEmbed(urwid.Text):
         >>> # w1 and w3 span 2 columns, w2 spans 5 columns
         >>> TextEmbed((2, [w1, (5, w2), w3]))
 
-        Visible embedded widgets are always re-rendered whenever the ``TextEmbed``
-        widget is rendered. Hence, this allows for dynamically chainging parts of text
-        without updating the entire text widget. Going a step further, embeddded widgets
-        can be swapped by using ``urwid.WidgetPlaceholder``.
+        Visible embedded widgets are always rendered (may be cached) whenever the
+        ``TextEmbed`` widget is re-rendered (i.e an uncached render). Hence, this
+        allows for dynamic parts of text without updating the entire widget.
+        Going a step further, embeddded widgets can be swapped by using
+        ``urwid.WidgetPlaceholder`` but their widths will remain the same.
 
         NOTE:
             - Every embedded widget must be a box widget and is always rendered with
@@ -58,6 +59,8 @@ class TextEmbed(urwid.Text):
             - Each embedded widgets are treated as a single WORD (i.e containing no
               whitespace). Therefore, consecutive embedded widgets are also treated as
               a single WORD. This affects the "space" wrap mode.
+            - After updating or swapping an embedded widget, this widget's canvases
+              should be invalidated to ensure it re-renders.
 
     Raises:
         TypeError: A widget markup element has a non-integer display attribute.
