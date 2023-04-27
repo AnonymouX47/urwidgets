@@ -53,19 +53,23 @@ class Hyperlink(urwid.WidgetWrap):
         return HyperlinkCanvas(self.uri, self._w.render(size, focus))
 
 
-class HyperlinkCanvas(urwid.TextCanvas):
+class HyperlinkCanvas(urwid.Canvas):
     cacheable = False
 
     _uw_next_id = 0
     _uw_free_ids = set()
 
     def __init__(self, uri: str, text_canv: urwid.TextCanvas) -> None:
-        self.__dict__.update(text_canv.__dict__)
+        super().__init__()
+        self._uw_text_canv = text_canv
         self._uw_uri = uri.encode()
         self._uw_id = self._uw_get_id()
 
     def __del__(self):
         __class__._uw_free_ids.add(self._uw_id)
+
+    def cols(self):
+        return self._uw_text_canv.cols()
 
     def content(
         self, *args, **kwargs
@@ -79,9 +83,12 @@ class HyperlinkCanvas(urwid.TextCanvas):
             # There can be only one line since wrap="ellipsis" and the text was checked
             # to not contain "\n".
             # There can be only one run since there was only one display attribute.
-            next(super().content(*args, **kwargs))[0],
+            next(self._uw_text_canv.content(*args, **kwargs))[0],
             (None, "U", END),
         ]
+
+    def rows(self):
+        return self._uw_text_canv.rows()
 
     @staticmethod
     def _uw_get_id():
