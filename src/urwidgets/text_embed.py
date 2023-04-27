@@ -16,7 +16,7 @@ import urwid
 """
 _Markup1 = Union[str, bytes]
 _Markup2 = Tuple[int, urwid.Widget]
-_Markup3 = Tuple[_Markup1, Union[_Markup1, _Markup2, "_Markup3"]]
+_Markup3 = Tuple[Union[_Markup1, urwid.AttrSpec], Union[_Markup1, _Markup2, "_Markup3"]]
 Markup = Union[_Markup1, _Markup2, "Markup"]
 """
 
@@ -260,7 +260,9 @@ class TextEmbed(urwid.Text):
               later updated by :py:meth:`_uw_update_widget_start_pos`.
         """
 
-        def recurse_markup(attr: Union[str, bytes, int], markup) -> None:
+        def recurse_markup(
+            attr: Union[str, bytes, urwid.AttrSpec, int], markup
+        ) -> None:
             if isinstance(markup, list):
                 for markup in markup:
                     recurse_markup(attr, markup)
