@@ -55,10 +55,11 @@ class Hyperlink(urwid.WidgetWrap):
     separate by any terminal emulator that correctly implements the feature. Also, if a
     hyperlink is wrapped or clipped, it shouldn't break.
 
-    SEEALSO:
-        - OSC 8 Specification:
-          https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
-        - OSC 8 adoption in terminal emulators: https://github.com/Alhadis/OSC8-Adoption
+    .. seealso::
+        - `OSC 8 Specification
+          <https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda>`_
+        - `OSC 8 adoption in terminal emulators
+          <https://github.com/Alhadis/OSC8-Adoption>`_
     """
 
     no_cache = ["render"]

@@ -24,9 +24,9 @@ Markup = Union[_Markup1, _Markup2, "Markup"]
 class TextEmbed(urwid.Text):
     """A text widget within which other widgets may be embedded.
 
-    This is an extension of the ``urwid.Text`` widget. Every feature and interface of
-    ``Text`` is supported and works essentially the same, **except for the
-    "ellipsis" wrap mode** which is currently not implemented.
+    This is an extension of the :py:class:`urwid.Text` widget. Every feature and
+    interface of :py:class:`~urwid.Text` is supported and works essentially the same,
+    **except for the "ellipsis" wrap mode** which is currently not implemented.
     Text markup format is essentially the same, except when embedding widgets.
 
     **Embedding Widgets**
@@ -55,7 +55,8 @@ class TextEmbed(urwid.Text):
 
         NOTE:
             - Every embedded widget must be a box widget and is always rendered with
-              size ``(width, 1)``.  ``urwid.Filler`` can be used to wrap flow widgets.
+              size ``(width, 1)``.  :py:class:`urwid.Filler` can be used to wrap flow
+              widgets.
             - Each embedded widgets are treated as a single WORD (i.e containing no
               whitespace). Therefore, consecutive embedded widgets are also treated as
               a single WORD. This affects the "space" wrap mode.
@@ -116,12 +117,12 @@ class TextEmbed(urwid.Text):
         """Returns a representation of the widget's content.
 
         Returns:
-            A tuple ``(text, attrib)``, where:
+            A tuple ``(text, attrib)``, where
 
             - *text* is the raw text content of the widget.
 
               Each embedded widget is represented by a substring starting with a
-              `"\\x00"` character followed by zero or more `"\\x01"` characters,
+              ``"\\x00"`` character followed by zero or more ``"\\x01"`` characters,
               with length equal to the widget's width.
 
             - *attrib* is the run-length encoding of display attributes.
