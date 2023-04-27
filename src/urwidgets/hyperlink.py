@@ -69,19 +69,19 @@ class Hyperlink(urwid.WidgetWrap):
         attr: Union[None, str, bytes, urwid.AttrSpec] = None,
         text: Optional[str] = None,
     ) -> None:
-        if text is not None:
-            if not isinstance(text, str):
-                raise TypeError(
-                    "Invalid type for 'text' (got: {type(text).__name__!r})"
-                )
-            if "\n" in text:
-                raise ValueError(f"'text' spans multiple lines (got: {text!r})")
-
         self._uw_set_uri(uri)
-        super().__init__(urwid.Text((attr, text or uri), "left", "ellipsis"))
+        super().__init__(urwid.Text((attr, ""), "left", "ellipsis"))
+        self._uw_set_text(text or uri)
 
     def render(self, size: Tuple[int,], focus: bool = False) -> urwid.HyperlinkCanvas:
         return HyperlinkCanvas(self._uw_uri, self._w.render(size, focus))
+
+    def _uw_set_text(self, text: str):
+        if not isinstance(text, str):
+            raise TypeError(f"Invalid type for 'text' (got: {type(text).__name__!r})")
+        if "\n" in text:
+            raise ValueError(f"Multi-line text (got: {text!r})")
+        self._w.set_text((self._w.attrib[0][0], text))
 
     def _uw_set_uri(self, uri: str):
         if not isinstance(uri, str):
@@ -94,6 +94,36 @@ class Hyperlink(urwid.WidgetWrap):
                 f"Invalid byte '\\x{tuple(invalid_bytes)[0]:02x}' found in URI: {uri!r}"
             )
         self._uw_uri = uri
+
+    attrib = property(
+        lambda self: self._w.attrib[0][0],
+        lambda self, attrib: self._w.set_text((attrib, self._w.text)),
+        doc="""The display attirbute of the hyperlink.
+
+        :type: Union[None, str, bytes, urwid.AttrSpec]
+
+        GET:
+            Returns the display attirbute.
+
+        SET:
+            Sets the display attirbute.
+        """,
+    )
+
+    text = property(
+        lambda self: self._w.text,
+        _uw_set_text,
+        doc="""The alternate text of the hyperlink.
+
+        :type: str
+
+        GET:
+            Returns the alternate text.
+
+        SET:
+            Sets the alternate text.
+        """,
+    )
 
     uri = property(
         lambda self: self._uw_uri,
@@ -109,7 +139,6 @@ class Hyperlink(urwid.WidgetWrap):
             Sets the target.
         """,
     )
-
 
 
 class HyperlinkCanvas(urwid.Canvas):
