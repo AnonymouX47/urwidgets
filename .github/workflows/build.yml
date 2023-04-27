@@ -28,5 +28,5 @@ jobs:
     - name: Test package build and installation
       run: |
         make build
-        pip install --force-reinstall dist/*.whl
-        pip install --force-reinstall dist/*.tar.gz
+        pip install -I dist/*.whl
+        pip install -I dist/*.tar.gz
