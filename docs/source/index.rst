@@ -6,10 +6,14 @@
 Welcome to urWIDgets's documentation!
 =====================================
 
+A collection of useful widgets for the `urwid <https://urwid.org>`_ TUI library.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   api
 
 
 Indices and tables
