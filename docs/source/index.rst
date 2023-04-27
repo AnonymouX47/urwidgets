@@ -21,4 +21,13 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
+
+
+.. sidebar-links::
+   :caption: External Links
+   :github:
+   :pypi: urwidgets
+
+   Changelog <https://github.com/AnonymouX47/urwidgets/blob/main/CHANGELOG.md>
+   Contribution Guide <https://github.com/AnonymouX47/urwidgets/blob/main/CONTRIBUTING.md>
+   License <https://github.com/AnonymouX47/urwidgets/blob/main/LICENSE>
