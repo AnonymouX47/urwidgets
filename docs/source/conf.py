@@ -6,9 +6,9 @@
 from urwidgets import __version__
 
 # -- Project information -----------------------------------------------------
-project = 'urWIDgets'
-copyright = '2023, Toluwaleke Ogundipe'
-author = 'Toluwaleke Ogundipe'
+project = "urWIDgets"
+copyright = "2023, Toluwaleke Ogundipe"
+author = "Toluwaleke Ogundipe"
 release = __version__
 
 # -- General configuration ---------------------------------------------------
