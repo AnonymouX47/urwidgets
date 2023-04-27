@@ -1,33 +1,9 @@
-py_files := *.py src/*
+.PHONY: build docs
 
 _: check
 
-.PHONY: build
-build:
-	python -m pip install --upgrade pip
-	python -m pip install --upgrade build
-	python -m build
 
-# Pre-commit checks
-
-check: lint check-format check-imports
-
-check-format:
-	black --check --diff --color $(py_files) && echo
-
-check-imports:
-	isort --check --diff --color $(py_files) && echo
-
-format:
-	black $(py_files)
-
-imports:
-	isort $(py_files)
-
-lint:
-	flake8 $(py_files) && echo
-
-# Installation
+# Development Environment Setup
 
 pip:
 	python -m pip install --upgrade pip
@@ -48,4 +24,52 @@ install-req-docs: pip
 	python -m pip install --upgrade -r docs/requirements.txt
 
 uninstall:
-	pip uninstall -y urwidgets
+	pip uninstall -y term-image
+
+
+# Pre-commit Checks and Corrections
+
+check: check-code
+
+py_files := *.py src/ docs/source/conf.py
+
+## Code Checks
+
+check-code: lint check-format check-imports
+
+lint:
+	flake8 $(py_files) && echo
+
+check-format:
+	black --check --diff --color $(py_files) && echo
+
+check-imports:
+	isort --check --diff --color $(py_files) && echo
+
+## Code Corrections
+
+format:
+	black $(py_files)
+
+imports:
+	isort $(py_files)
+
+
+# Building the Docs
+
+docs:
+	cd docs/ && make html
+
+clean-docs:
+	cd docs/ && make clean
+
+
+# Packaging
+
+build:
+	python -m pip install --upgrade pip
+	python -m pip install --upgrade build
+	python -m build
+
+clean:
+	rm -rf build dist
