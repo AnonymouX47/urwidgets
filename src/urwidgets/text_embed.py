@@ -93,7 +93,7 @@ class TextEmbed(urwid.Text):
         lambda self: super().attrib,
         doc="""Run-length encoding of display attributes of the widget's content.
 
-        :type: List[Tuple[Union[None, str, bytes, int], int]]
+        :type: List[Tuple[Union[DisplayAttribute, int], int]]
 
         See the description of the second item in the return value of
         :py:meth:`get_text`.
@@ -125,7 +125,7 @@ class TextEmbed(urwid.Text):
 
     def get_text(
         self,
-    ) -> Tuple[str, List[Tuple[Union[None, str, bytes, int], int]]]:
+    ) -> Tuple[str, List[Tuple[Union[DisplayAttribute, int], int]]]:
         """Returns a representation of the widget's content.
 
         Returns:
@@ -224,7 +224,7 @@ class TextEmbed(urwid.Text):
 
         return urwid.CanvasCombine(canvases)
 
-    def set_text(self, markup) -> None:
+    def set_text(self, markup: Markup) -> None:
         """Sets the widget's content.
 
         Also supports widget markup elements. See the class description.
@@ -262,7 +262,9 @@ class TextEmbed(urwid.Text):
         ]
 
     @staticmethod
-    def _uw_substitute_widgets(markup):
+    def _uw_substitute_widgets(
+        markup: Markup,
+    ) -> Tuple[Markup, List[Tuple[urwid.Widget, int, int]]]:
         """Extracts embedded widgets from *markup* and replace widget markup elements
         with placeholders.
 
@@ -276,9 +278,7 @@ class TextEmbed(urwid.Text):
               later updated by :py:meth:`_uw_update_widget_start_pos`.
         """
 
-        def recurse_markup(
-            attr: Union[str, bytes, urwid.AttrSpec, int], markup
-        ) -> None:
+        def recurse_markup(attr: Union[DisplayAttribute, int], markup: Markup) -> None:
             if isinstance(markup, list):
                 for markup in markup:
                     recurse_markup(attr, markup)
