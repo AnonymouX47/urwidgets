@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 __all__ = (
+    "parse_text",
     "TextEmbed",
     # Type Aliases
     "Markup",
@@ -14,8 +15,9 @@ __all__ = (
 )
 
 import re
+from functools import cache, lru_cache
 from itertools import islice
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 import urwid
 
@@ -407,6 +409,170 @@ class TextEmbed(urwid.Text):
         return urwid.CanvasJoin(canvases), tail
 
 
+def parse_text(
+    text: str,
+    patterns: Iterable[re.Pattern],
+    repl: Callable[[re.Pattern, Tuple[Optional[str]], Tuple[int, int], ...], Markup],
+    repl_args: Tuple[Any] = (),
+    repl_kwargs: Dict[str, Any] = {},
+) -> ListMarkup:
+    r"""Parses a string into a text/widget markup list.
+
+    Args:
+        text: The string to parse.
+        patterns: An iterable of RegEx pattern objects.
+        repl: A callable to replace a substring of *text* matched by any of the given
+          RegEx patterns.
+        repl_args: Additional positional arguments to be passed to *repl* whenever it's
+          called.
+        repl_kwargs: keyword arguments to be passed to *repl* whenever it's called.
+
+    Returns:
+        A text/widget markup list that should be compatible with :py:class:`TextEmbed`
+        or :py:class:`urwid.Text`, depending on the values returned by *repl*.
+
+    Raises:
+        TypeError: An argument is of an unexpected type.
+        ValueError: A given pattern object was not compiled from a :py:class:`str`
+          instance.
+
+    Whenever any of the given RegEx patterns matches a **non-empty** substring of
+    *text*, *repl* is called with the following arguments (in the given order):
+
+    - the :py:class:`re.Pattern` object that matched the substring
+    - a tuple containing the match groups
+
+      - starting with the whole match,
+      - followed by the all the subgroups of the match, from 1 up to however many
+        groups are in the pattern, if any (``None`` for each group that didn't
+        participate in the match)
+
+    - a tuple containing the indices of the start and end of the substring
+    - *repl_args* unpacked
+    - *repl_kwargs* unpacked
+
+    and should return a valid text/widget markup (see :py:data:`Markup`). If the
+    returned value is *false* (such as an empty string), the substring is
+    omitted from the result.
+
+    Example::
+
+        import re
+        from urwid import Filler
+        from urwidgets import Hyperlink, TextEmbed, parse_text
+
+        MARKDOWN = {
+            re.compile(r"\*\*(.+?)\*\*"): lambda g: ("bold", g[1]),
+            re.compile("https://[^ ]+"): (
+                lambda g: (min(len(g[0]), 14), Filler(Hyperlink(g[0], "blue")))
+            ),
+            re.compile(r"\[(.+)\]\((.+)\)"): (
+                lambda g: (len(g[1]), Filler(Hyperlink(g[2], "blue", g[1])))
+            ),
+        }
+
+        link = "https://urwid.org"
+        text = f"[This]({link}) is a **link** to {link}"
+        print(text)
+        # Output: [This](https://urwid.org) is a **link** to https://urwid.org
+
+        markup = parse_text(
+            text, MARKDOWN, lambda pattern, groups, span: MARKDOWN[pattern](groups)
+        )
+        print(markup)
+        # Output:
+        # [
+        #   (4, <Filler box widget <Hyperlink flow widget>>),
+        #   ' is a ',
+        #   ('bold', 'link'),
+        #   ' to ',
+        #   (14, <Filler box widget <Hyperlink flow widget>>),
+        # ]
+
+        text_widget = TextEmbed(markup)
+        canv = text_widget.render(text_widget.pack()[:1])
+        print(canv.text[0].decode())
+        # Output: This is a link to https://urwid…
+        # The hyperlinks will be clickable if supported
+
+    NOTE:
+        In the case of overlapping matches, the substring that occurs first is matched
+        and if they start at the same index, the pattern that appears first in
+        *patterns* takes precedence.
+    """
+    if not isinstance(text, str):
+        raise TypeError(f"Tnvalid type for 'text' (got: {type(text).__name__!r})")
+    if not text:
+        return [text]
+
+    combined_pattern, indexed_patterns = combine_patterns(tuple(patterns))
+    if not indexed_patterns:
+        return [text]
+
+    full_markup = []
+    ptr = 0
+    for match in combined_pattern.finditer(text):
+        span = match.span()
+        if ptr < span[0]:
+            full_markup.append(text[ptr : span[0]])
+        if match.group():
+            pattern_index = match.lastindex
+            pattern = indexed_patterns[pattern_index]
+            markup = repl(
+                pattern,
+                match.groups()[pattern_index - 1 : pattern_index + pattern.groups],
+                span,
+                *repl_args,
+                **repl_kwargs,
+            )
+            if markup:
+                full_markup.append(markup)
+        ptr = span[1]
+    if ptr < len(text):
+        full_markup.append(text[ptr:])
+
+    return full_markup
+
+
+# Private
+
+RE_INLINE_FLAGS = {re.A: "a", re.I: "i", re.L: "L", re.M: "m", re.S: "s", re.X: "x"}
+
+
+@lru_cache
+def combine_patterns(
+    patterns: Tuple[re.Pattern],
+) -> Tuple[re.Pattern, Dict[int, re.Pattern]]:
+    """Combines multiple RegEx patterns with their respective flags into a single OR-ed
+    pattern.
+
+    Returns:
+        A tuple containing
+
+        - the combined RegEx pattern
+        - a dictionary mapping the index of the group in the combined pattern
+          corresponding to each given pattern to the pattern
+    """
+    grouped_patterns = []
+    indexed_patterns = {}  # <index of group in combined pattern>: <pattern>
+    group_index = 1
+    for pattern in patterns:
+        pattern_string = pattern.pattern
+        if not isinstance(pattern_string, str):
+            raise ValueError(f"Pattern not compiled from `str` (got: {pattern!r})")
+
+        inline_flags = get_inline_flags(pattern.flags)
+        grouped_patterns.append(
+            f"(?{inline_flags}:({pattern_string}))"
+            if inline_flags
+            else f"({pattern_string})"
+        )
+        indexed_patterns[group_index] = pattern
+        group_index += pattern.groups + 1
+
+    return re.compile("|".join(grouped_patterns)), indexed_patterns
+
+
 def fix_text_canvas_attr(canv: urwid.TextCanvas) -> urwid.TextCanvas:
     """Workaround for a bug in in `urwid.text_layout.StandardTextLayout`.
 
@@ -422,3 +588,9 @@ def fix_text_canvas_attr(canv: urwid.TextCanvas) -> urwid.TextCanvas:
             del line_attr[0]
 
     return canv
+
+
+@cache  # Only 511 (zero is excluded) unique bit patterns (and not even all can occur)
+def get_inline_flags(flags: int) -> str:
+    """Converts a RegEx integer flag into the corresponding set of inline flags"""
+    return "".join([inline for flag, inline in RE_INLINE_FLAGS.items() if flag & flags])

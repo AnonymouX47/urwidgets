@@ -5,6 +5,7 @@ A collection of widgets for urwid (https://urwid.org)
 """
 
 __all__ = (
+    "parse_text",
     "Hyperlink",
     "TextEmbed",
     # Type Aliases
@@ -30,6 +31,7 @@ from .text_embed import (
     TupleMarkup,
     WidgetListMarkup,
     WidgetTupleMarkup,
+    parse_text,
 )
 
 version_info = (1, 0, 0, "dev")
