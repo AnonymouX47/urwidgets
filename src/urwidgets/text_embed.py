@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-__all__ = ("TextEmbed",)
+__all__ = (
+    "TextEmbed",
+    # Type Aliases
+    "Markup",
+    "StringMarkup",
+    "ListMarkup",
+    "TupleMarkup",
+    "NormalTupleMarkup",
+    "DisplayAttribute",
+    "WidgetTupleMarkup",
+    "WidgetListMarkup",
+)
 
 import re
 from itertools import islice
@@ -11,14 +22,15 @@ import urwid
 # NOTE: Any new "private" attribute of any subclass of an urwid class should be
 # prepended with "_uw" to avoid clashes with names used by urwid itself.
 
-# I guess this typing thing ain't my thing... probably won't ever come back to this.
-# I'd rather spend my time on something functional.
-"""
-_Markup1 = Union[str, bytes]
-_Markup2 = Tuple[int, urwid.Widget]
-_Markup3 = Tuple[Union[_Markup1, urwid.AttrSpec], Union[_Markup1, _Markup2, "_Markup3"]]
-Markup = Union[_Markup1, _Markup2, "Markup"]
-"""
+# I really hope these are correct :D
+Markup = Union["StringMarkup", "ListMarkup", "TupleMarkup"]
+StringMarkup = Union[str, bytes]
+ListMarkup = List["Markup"]
+TupleMarkup = Union["NormalTupleMarkup", "WidgetTupleMarkup"]
+NormalTupleMarkup = Tuple["DisplayAttribute", Union["StringMarkup", "ListMarkup"]]
+DisplayAttribute = Union[None, str, bytes, urwid.AttrSpec]
+WidgetTupleMarkup = Tuple[int, Union[urwid.Widget, "WidgetListMarkup"]]
+WidgetListMarkup = List[Union[urwid.Widget, "Markup", "WidgetListMarkup"]]
 
 
 class TextEmbed(urwid.Text):

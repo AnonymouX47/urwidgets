@@ -36,6 +36,19 @@ autodoc_default_options = {
     "autosummary-nosignatures": True,
 }
 autodoc_typehints = "description"
+autodoc_type_aliases = {
+    name: name
+    for name in (
+        "Markup",
+        "StringMarkup",
+        "ListMarkup",
+        "TupleMarkup",
+        "NormalTupleMarkup",
+        "DisplayAttribute",
+        "WidgetTupleMarkup",
+        "WidgetListMarkup",
+    )
+}
 autodoc_typehints_format = "fully-qualified"
 autodoc_typehints_description_target = "documented"
 autodoc_member_order = "bysource"

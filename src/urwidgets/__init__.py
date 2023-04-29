@@ -6,11 +6,33 @@ A collection of widgets for urwid (https://urwid.org)
 Copyright (c) 2023, Toluwaleke Ogundipe <anonymoux47@gmail.com>
 """
 
-__all__ = ("Hyperlink", "TextEmbed")
+__all__ = (
+    "Hyperlink",
+    "TextEmbed",
+    # Type Aliases
+    "Markup",
+    "StringMarkup",
+    "ListMarkup",
+    "TupleMarkup",
+    "NormalTupleMarkup",
+    "DisplayAttribute",
+    "WidgetTupleMarkup",
+    "WidgetListMarkup",
+)
 __author__ = "Toluwaleke Ogundipe"
 
 from .hyperlink import Hyperlink
-from .text_embed import TextEmbed
+from .text_embed import (
+    DisplayAttribute,
+    ListMarkup,
+    Markup,
+    NormalTupleMarkup,
+    StringMarkup,
+    TextEmbed,
+    TupleMarkup,
+    WidgetListMarkup,
+    WidgetTupleMarkup,
+)
 
 version_info = (1, 0, 0, "dev")
 
