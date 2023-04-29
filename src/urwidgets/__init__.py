@@ -2,8 +2,6 @@
 urWIDgets
 
 A collection of widgets for urwid (https://urwid.org)
-
-Copyright (c) 2023, Toluwaleke Ogundipe <anonymoux47@gmail.com>
 """
 
 __all__ = (
