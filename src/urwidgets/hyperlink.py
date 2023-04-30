@@ -82,7 +82,7 @@ class Hyperlink(urwid.WidgetWrap):
             raise TypeError(f"Invalid type for 'text' (got: {type(text).__name__!r})")
         if "\n" in text:
             raise ValueError(f"Multi-line text (got: {text!r})")
-        self._w.set_text((self._w.attrib[0][0], text))
+        self._w.set_text(((self._w.attrib or [(None, 0)])[0][0], text))
 
     def _uw_set_uri(self, uri: str):
         if not isinstance(uri, str):
@@ -97,7 +97,7 @@ class Hyperlink(urwid.WidgetWrap):
         self._uw_uri = uri
 
     attrib = property(
-        lambda self: self._w.attrib[0][0],
+        lambda self: (self._w.attrib or [(None, 0)])[0][0],
         lambda self, attrib: self._w.set_text((attrib, self._w.text)),
         doc="""The display attirbute of the hyperlink.
 
