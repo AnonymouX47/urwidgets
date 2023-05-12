@@ -22,7 +22,7 @@ with open("README.md", "r") as fp:
 
 setup(
     name="urwidgets",
-    version="1.0.0-dev",
+    version="0.1.0.dev0",
     author="AnonymouX47",
     author_email="anonymoux47@gmail.com",
     url="https://github.com/AnonymouX47/urwidgets",
