@@ -448,7 +448,7 @@ def parse_text(
         groups are in the pattern, if any (``None`` for each group that didn't
         participate in the match)
 
-    - a tuple containing the indices of the start and end of the substring
+    - a tuple containing the indexes of the start and end of the substring
     - *repl_args* unpacked
     - *repl_kwargs* unpacked
 
