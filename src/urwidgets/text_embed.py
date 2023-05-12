@@ -413,8 +413,8 @@ def parse_text(
     text: str,
     patterns: Iterable[re.Pattern],
     repl: Callable[[re.Pattern, Tuple[Optional[str]], Tuple[int, int], ...], Markup],
-    repl_args: Tuple[Any] = (),
-    repl_kwargs: Dict[str, Any] = {},
+    *repl_args: Any,
+    **repl_kwargs: Any,
 ) -> ListMarkup:
     r"""Parses a string into a text/widget markup list.
 
