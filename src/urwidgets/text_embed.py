@@ -415,7 +415,7 @@ def parse_text(
     repl: Callable[[re.Pattern, Tuple[Optional[str]], Tuple[int, int], ...], Markup],
     *repl_args: Any,
     **repl_kwargs: Any,
-) -> ListMarkup:
+) -> Markup:
     r"""Parses a string into a text/widget markup list.
 
     Args:
@@ -428,8 +428,9 @@ def parse_text(
         repl_kwargs: keyword arguments to be passed to *repl* whenever it's called.
 
     Returns:
-        A text/widget markup list that should be compatible with :py:class:`TextEmbed`
-        or :py:class:`urwid.Text`, depending on the values returned by *repl*.
+        A text/widget markup (see :py:data:`Markup`) that should be compatible with
+        :py:class:`TextEmbed` and/or :py:class:`urwid.Text`, depending on the values
+        returned by *repl*.
 
     Raises:
         TypeError: An argument is of an unexpected type.
@@ -531,7 +532,7 @@ def parse_text(
     if ptr < len(text):
         full_markup.append(text[ptr:])
 
-    return full_markup
+    return full_markup[0] if len(full_markup) == 1 else full_markup
 
 
 # Private
