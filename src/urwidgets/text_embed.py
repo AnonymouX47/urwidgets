@@ -505,7 +505,7 @@ def parse_text(
     if not isinstance(text, str):
         raise TypeError(f"Tnvalid type for 'text' (got: {type(text).__name__!r})")
     if not text:
-        return [text]
+        return text
 
     patterns = tuple(patterns)
     if not patterns:
