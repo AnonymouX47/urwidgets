@@ -15,7 +15,7 @@ __all__ = (
 )
 
 import re
-from functools import cache, lru_cache
+from functools import lru_cache
 from itertools import islice
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
@@ -542,7 +542,7 @@ def parse_text(
 RE_INLINE_FLAGS = {re.A: "a", re.I: "i", re.L: "L", re.M: "m", re.S: "s", re.X: "x"}
 
 
-@lru_cache
+@lru_cache()
 def combine_patterns(
     patterns: Tuple[re.Pattern],
 ) -> Tuple[re.Pattern, Dict[int, re.Pattern]]:
@@ -593,7 +593,8 @@ def fix_text_canvas_attr(canv: urwid.TextCanvas) -> urwid.TextCanvas:
     return canv
 
 
-@cache  # Only 511 (zero is excluded) unique bit patterns (and not even all can occur)
+# Only 511 (zero is excluded) unique bit patterns (and not even all can occur)
+@lru_cache(maxsize=None)
 def get_inline_flags(flags: int) -> str:
     """Converts a RegEx integer flag into the corresponding set of inline flags"""
     return "".join([inline for flag, inline in RE_INLINE_FLAGS.items() if flag & flags])
