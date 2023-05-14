@@ -6,6 +6,13 @@
 Welcome to urWIDgets's documentation!
 =====================================
 
+.. attention::
+   🚧 There might be incompatible changes between minor versions of
+   `version zero <https://semver.org/spec/v2.0.0.html#spec-item-4>`_!
+
+   If you want to use this library in a project while it's still on version zero,
+   ensure you pin the dependency to a specific minor version e.g ``>=0.1,<0.2``.
+
 A collection of useful widgets for the `urwid <https://urwid.org>`_ TUI library.
 
 .. toctree::

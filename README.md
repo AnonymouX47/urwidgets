@@ -30,6 +30,13 @@ pip install git+https://github.com/AnonymouX47/urwidgets.git
 
 ## Usage
 
+<p align="center"><b>
+   🚧 There might be incompatible changes between minor versions of
+   <a href='https://semver.org/spec/v2.0.0.html#spec-item-4'>version zero</a>!
+</b></p>
+
+**If you want to use this library in a project while it's still on version zero, ensure you pin the dependency to a specific minor version e.g `>=0.1,<0.2`.**
+
 See the [docs](https://urwidgets.readthedocs.io) for the API Reference.
 
 
