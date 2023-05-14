@@ -434,6 +434,7 @@ def parse_text(
 
     Raises:
         TypeError: An argument is of an unexpected type.
+        ValueError: *patterns* is empty.
         ValueError: A given pattern object was not compiled from a :py:class:`str`
           instance.
 
@@ -506,10 +507,11 @@ def parse_text(
     if not text:
         return [text]
 
-    combined_pattern, indexed_patterns = combine_patterns(tuple(patterns))
-    if not indexed_patterns:
-        return [text]
+    patterns = tuple(patterns)
+    if not patterns:
+        raise ValueError("No RegEx patterns")
 
+    combined_pattern, indexed_patterns = combine_patterns(patterns)
     full_markup = []
     ptr = 0
     for match in combined_pattern.finditer(text):
