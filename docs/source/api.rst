@@ -7,6 +7,10 @@ API Reference
 Type Aliases
 ------------
 
+.. important::
+   These may not be *complete* or *correct* for use with a static type checker.
+   They're intended for the comprehension of interfaces defined in this package, by programmers.
+
 .. autodata:: Markup
 .. autodata:: StringMarkup
 .. autodata:: ListMarkup
