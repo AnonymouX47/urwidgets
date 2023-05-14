@@ -453,9 +453,9 @@ def parse_text(
     - *repl_args* unpacked
     - *repl_kwargs* unpacked
 
-    and should return a valid text/widget markup (see :py:data:`Markup`). If the
-    returned value is *false* (such as an empty string), the substring is
-    omitted from the result.
+    and *should* return a valid text/widget markup (see :py:data:`Markup`). If the
+    value returned is *false* (such as ``None`` or an empty string), it is omitted
+    from the result.
 
     Example::
 
