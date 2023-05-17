@@ -72,7 +72,7 @@ class Hyperlink(urwid.WidgetWrap):
     ) -> None:
         self._uw_set_uri(uri)
         super().__init__(urwid.Text((_Attr(attr), ""), "left", "ellipsis"))
-        self._uw_set_text(text or uri)
+        self._uw_set_text(uri if text is None else text)
 
     def render(self, size: Tuple[int,], focus: bool = False) -> urwid.HyperlinkCanvas:
         return HyperlinkCanvas(self._uw_uri, self._w.render(size, focus))
@@ -80,7 +80,9 @@ class Hyperlink(urwid.WidgetWrap):
     def _uw_set_text(self, text: str):
         if not isinstance(text, str):
             raise TypeError(f"Invalid type for 'text' (got: {type(text).__name__!r})")
-        if "\n" in text:
+        if not text:
+            raise ValueError("Hyperlink text is empty")
+        if "\n" in text:  # Other multi-line whitespace characters are escaped by urwid
             raise ValueError(f"Multi-line text (got: {text!r})")
         self._w.set_text((self._w.attrib[0][0], text))
 
