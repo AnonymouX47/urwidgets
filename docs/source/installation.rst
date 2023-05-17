@@ -4,6 +4,7 @@ Installation
 Requirements
 ------------
 
+- `Python <https://www.python.org/>`_ >= 3.7
 - `urwid <https://github.com/urwid/urwid/wiki/Installation-instructions>`_ (will be installed automatically)
 
 
