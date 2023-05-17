@@ -71,7 +71,7 @@ class Hyperlink(urwid.WidgetWrap):
         text: Optional[str] = None,
     ) -> None:
         self._uw_set_uri(uri)
-        super().__init__(urwid.Text((attr, ""), "left", "ellipsis"))
+        super().__init__(urwid.Text((_Attr(attr), ""), "left", "ellipsis"))
         self._uw_set_text(text or uri)
 
     def render(self, size: Tuple[int,], focus: bool = False) -> urwid.HyperlinkCanvas:
@@ -82,7 +82,7 @@ class Hyperlink(urwid.WidgetWrap):
             raise TypeError(f"Invalid type for 'text' (got: {type(text).__name__!r})")
         if "\n" in text:
             raise ValueError(f"Multi-line text (got: {text!r})")
-        self._w.set_text(((self._w.attrib or [(None, 0)])[0][0], text))
+        self._w.set_text((self._w.attrib[0][0], text))
 
     def _uw_set_uri(self, uri: str):
         if not isinstance(uri, str):
@@ -97,8 +97,8 @@ class Hyperlink(urwid.WidgetWrap):
         self._uw_uri = uri
 
     attrib = property(
-        lambda self: (self._w.attrib or [(None, 0)])[0][0],
-        lambda self, attrib: self._w.set_text((attrib, self._w.text)),
+        lambda self: self._w.attrib[0][0].attr,
+        lambda self, attrib: self._w.set_text((_Attr(attrib), self._w.text)),
         doc="""The display attirbute of the hyperlink.
 
         :type: Union[None, str, bytes, urwid.AttrSpec]
@@ -167,14 +167,20 @@ class HyperlinkCanvas(urwid.Canvas):
         None,
         None,
     ]:
-        yield [
-            (None, "U", START % (self._uw_id, self._uw_uri)),
-            # There can be only one line since wrap="ellipsis" and the text was checked
-            # to not contain "\n".
-            # There can be only one run since there was only one display attribute.
-            next(self._uw_text_canv.content(*args, **kwargs))[0],
-            (None, "U", END),
-        ]
+        # There can only be one line since wrap="ellipsis" and the text was checked
+        # to not contain "\n".
+        content_line = next(self._uw_text_canv.content(*args, **kwargs))
+
+        if isinstance(content_line[0][0], _Attr):
+            hyperlink_text, *padding = content_line
+            yield [
+                (None, "U", START % (self._uw_id, self._uw_uri)),
+                (hyperlink_text[0].attr, *hyperlink_text[1:]),
+                (None, "U", END),
+                *padding,  # if any
+            ]
+        else:  # A trim containing padding only
+            yield content_line
 
     def rows(self):
         return self._uw_text_canv.rows()
@@ -186,3 +192,12 @@ class HyperlinkCanvas(urwid.Canvas):
         __class__._uw_next_id += 1
 
         return __class__._uw_next_id - 1
+
+
+class _Attr:
+    """Wraps a text display attribute to ensure it's always distinguished from those of
+    neighbouring text runs.
+    """
+
+    def __init__(self, attr: Union[None, str, bytes, urwid.AttrSpec]):
+        self.attr = attr
