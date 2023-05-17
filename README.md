@@ -12,6 +12,7 @@ A collection of widgets for [urwid](https://urwid.org)
 ## Installation
 
 ### Requirements
+- [Python](https://www.python.org/) >= 3.7
 - [urwid](https://github.com/urwid/urwid/wiki/Installation-instructions) (will be installed automatically)
 
 ### Steps
