@@ -30,9 +30,9 @@ StringMarkup = Union[str, bytes]
 ListMarkup = List["Markup"]
 TupleMarkup = Union["NormalTupleMarkup", "WidgetTupleMarkup"]
 NormalTupleMarkup = Tuple["DisplayAttribute", Union["StringMarkup", "ListMarkup"]]
-DisplayAttribute = Union[None, str, bytes, urwid.AttrSpec]
-WidgetTupleMarkup = Tuple[int, Union[urwid.Widget, "WidgetListMarkup"]]
-WidgetListMarkup = List[Union[urwid.Widget, "Markup", "WidgetListMarkup"]]
+DisplayAttribute = Union[None, str, bytes, "urwid.AttrSpec"]
+WidgetTupleMarkup = Tuple[int, Union["urwid.Widget", "WidgetListMarkup"]]
+WidgetListMarkup = List[Union["urwid.Widget", "Markup", "WidgetListMarkup"]]
 
 
 class TextEmbed(urwid.Text):
