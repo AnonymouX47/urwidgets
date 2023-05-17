@@ -2,9 +2,11 @@ from __future__ import annotations
 
 __all__ = ("Hyperlink",)
 
-from typing import Generator, List, Optional, Tuple, Union
+from typing import Generator, List, Optional, Tuple
 
 import urwid
+
+from .text_embed import DisplayAttribute
 
 # NOTE: Any new "private" attribute of any subclass of an urwid class should be
 # prepended with "_uw" to avoid clashes with names used by urwid itself.
@@ -67,7 +69,7 @@ class Hyperlink(urwid.WidgetWrap):
     def __init__(
         self,
         uri: str,
-        attr: Union[None, str, bytes, urwid.AttrSpec] = None,
+        attr: DisplayAttribute = None,
         text: Optional[str] = None,
     ) -> None:
         self._uw_set_uri(uri)
@@ -103,7 +105,7 @@ class Hyperlink(urwid.WidgetWrap):
         lambda self, attrib: self._w.set_text((_Attr(attrib), self._w.text)),
         doc="""The display attirbute of the hyperlink.
 
-        :type: Union[None, str, bytes, urwid.AttrSpec]
+        :type: DisplayAttribute
 
         GET:
             Returns the display attirbute.
@@ -164,11 +166,7 @@ class HyperlinkCanvas(urwid.Canvas):
 
     def content(
         self, *args, **kwargs
-    ) -> Generator[
-        List[Tuple[Union[None, str, bytes, urwid.AttrSpec], Optional[str], bytes]],
-        None,
-        None,
-    ]:
+    ) -> Generator[List[Tuple[DisplayAttribute, Optional[str], bytes]], None, None]:
         # There can only be one line since wrap="ellipsis" and the text was checked
         # to not contain "\n".
         content_line = next(self._uw_text_canv.content(*args, **kwargs))
@@ -201,5 +199,5 @@ class _Attr:
     neighbouring text runs.
     """
 
-    def __init__(self, attr: Union[None, str, bytes, urwid.AttrSpec]):
+    def __init__(self, attr: DisplayAttribute):
         self.attr = attr
