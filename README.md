@@ -6,7 +6,7 @@ A collection of widgets for [urwid](https://urwid.org)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contribution](#contribution)
-- [Donate](#donate)
+- [Sponsor This Project](#sponsor-this-project)
 
 
 ## Installation
@@ -40,17 +40,15 @@ pip install git+https://github.com/AnonymouX47/urwidgets.git
 
 See the [docs](https://urwidgets.readthedocs.io) for the API Reference.
 
-
 ## Contribution
 
 Please read through the [guidelines](https://github.com/AnonymouX47/urwidgets/blob/main/CONTRIBUTING.md).
 
-
-## Donate
+## Sponsor This Project
 
 <a href="https://www.buymeacoffee.com/anonymoux47" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
 </a>
 
-Your donation will go a long way in aiding the progress and development of this project.
+Any amount will go a long way in aiding the progress and development of this project.
 Thank you! 💓
