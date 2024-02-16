@@ -83,13 +83,18 @@ class TextEmbed(urwid.Text):
         ValueError: A widget has a non-positive width (display attribute).
     """
 
+    _UW_PLACEHOLDER_HEAD = "\uf8fe"
+    _UW_PLACEHOLDER_TAIL = "\uf8ff"
+
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
     # head of a placeholder not tails on subsequent lines
-    _uw_placeholder_pattern = re.compile("(\0\1*)")
+    _uw_placeholder_pattern = re.compile(
+        f"({_UW_PLACEHOLDER_HEAD}{_UW_PLACEHOLDER_TAIL}*)"
+    )
 
     # A tail must occur at the beginning of a line but may be preceded by padding
     # spaces when `align != "left"` and `wrap != "clip"`
-    _uw_tail_pattern = re.compile("^( *)(\1+)")
+    _uw_tail_pattern = re.compile(f"^( *)({_UW_PLACEHOLDER_TAIL}+)")
 
     attrib = property(
         lambda self: super().attrib,
@@ -135,8 +140,7 @@ class TextEmbed(urwid.Text):
 
             - *text* is the raw text content of the widget.
 
-              Each embedded widget is represented by a substring starting with a
-              ``"\\x00"`` character followed by zero or more ``"\\x01"`` characters,
+              Each embedded widget is represented by a placeholder substring
               with length equal to the widget's width.
 
             - *attrib* is the run-length encoding of display attributes.
@@ -168,6 +172,7 @@ class TextEmbed(urwid.Text):
         text = text_canv.text
         canvases = []
         placeholder_pattern = __class__._uw_placeholder_pattern
+        placeholder_tail = __class__._UW_PLACEHOLDER_TAIL
         tail = None
         top = 0
         n_lines = 0
@@ -183,7 +188,7 @@ class TextEmbed(urwid.Text):
         for row_index, line in enumerate(text):
             line = line.decode()
             if clipped:
-                if line.startswith("\1"):  # align != "left"
+                if line.startswith(placeholder_tail):  # align != "left"
                     widget_index = text_canv_content[row_index][0][0]
                     widget, width, start_pos = embedded[widget_index]
                     tail_canv = widget.render((width, 1), focus)
@@ -301,7 +306,9 @@ class TextEmbed(urwid.Text):
                     raise ValueError(f"Not a box widget (got: {markup!r})")
                 if attr <= 0:
                     raise ValueError(f"Invalid widget width (got: {attr!r})")
-                new_markup.append((len(embedded), "\0" + "\1" * (attr - 1)))
+                new_markup.append(
+                    (len(embedded), placeholder_head + placeholder_tail * (attr - 1))
+                )
                 embedded.append((markup, attr, 0))
             else:
                 # Normalize text type to `str` since other parts of this class use
@@ -312,6 +319,8 @@ class TextEmbed(urwid.Text):
 
         embedded = []
         new_markup = []
+        placeholder_head = __class__._UW_PLACEHOLDER_HEAD
+        placeholder_tail = __class__._UW_PLACEHOLDER_TAIL
         recurse_markup(None, markup)
 
         return new_markup, embedded
