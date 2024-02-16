@@ -20,6 +20,7 @@ extensions = [
     "sphinx_toolbox.github",
     "sphinx_toolbox.sidebar_links",
     "sphinx_toolbox.more_autosummary",
+    "sphinx_toolbox.collapse",
 ]
 
 # -- Options for HTML output -------------------------------------------------
