@@ -17,7 +17,18 @@ __all__ = (
 import re
 from functools import lru_cache
 from itertools import islice
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import urwid
 
@@ -83,13 +94,46 @@ class TextEmbed(urwid.Text):
         ValueError: A widget has a non-positive width (display attribute).
     """
 
+    PLACEHOLDER_HEAD: ClassVar[str] = "\uf8fe"
+    """"""  # Gets `autodoc` to include the member.
+
+    PLACEHOLDER_TAIL: ClassVar[str] = "\uf8ff"
+    """Embedded widgets' text placeholder components.
+
+    Each should be a unique unicode codepoint that:
+
+    - occupies exactly one column on a terminal screen.
+    - is guaranteed to not occur in the text content of the widget, if any.
+
+    Either or both may only be overriden on subclasses - during their creation,
+    not after - as in::
+
+       class TextEmbedSub(TextEmbed):
+           PLACEHOLDER_HEAD = "="
+           PLACEHOLDER_TAIL = "-"
+
+    HINT:
+        In most cases, the defaults should be sufficient. There's no need to override
+        these except it's possible for the default values to occur in the widget's
+        text content (if any), which is highly unlikely.
+    """
+
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
     # head of a placeholder not tails on subsequent lines
-    _uw_placeholder_pattern = re.compile("(\0\1*)")
+    _UW_PLACEHOLDER_PATTERN = re.compile(f"({PLACEHOLDER_HEAD}{PLACEHOLDER_TAIL}*)")
 
     # A tail must occur at the beginning of a line but may be preceded by padding
     # spaces when `align != "left"` and `wrap != "clip"`
-    _uw_tail_pattern = re.compile("^( *)(\1+)")
+    _UW_TAIL_PATTERN = re.compile(f"^( *)({PLACEHOLDER_TAIL}+)")
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        placeholder_tail_overriden = "PLACEHOLDER_TAIL" in cls.__dict__
+        if "PLACEHOLDER_HEAD" in cls.__dict__ or placeholder_tail_overriden:
+            cls._UW_PLACEHOLDER_PATTERN = re.compile(
+                f"({cls.PLACEHOLDER_HEAD}{cls.PLACEHOLDER_TAIL}*)"
+            )
+        if placeholder_tail_overriden:
+            cls._UW_TAIL_PATTERN = re.compile(f"^( *)({cls.PLACEHOLDER_TAIL}+)")
 
     attrib = property(
         lambda self: super().attrib,
@@ -135,8 +179,7 @@ class TextEmbed(urwid.Text):
 
             - *text* is the raw text content of the widget.
 
-              Each embedded widget is represented by a substring starting with a
-              ``"\\x00"`` character followed by zero or more ``"\\x01"`` characters,
+              Each embedded widget is represented by a placeholder substring
               with length equal to the widget's width.
 
             - *attrib* is the run-length encoding of display attributes.
@@ -167,7 +210,8 @@ class TextEmbed(urwid.Text):
 
         text = text_canv.text
         canvases = []
-        placeholder_pattern = __class__._uw_placeholder_pattern
+        placeholder_pattern = type(self)._UW_PLACEHOLDER_PATTERN
+        placeholder_tail = type(self).PLACEHOLDER_TAIL
         tail = None
         top = 0
         n_lines = 0
@@ -183,7 +227,7 @@ class TextEmbed(urwid.Text):
         for row_index, line in enumerate(text):
             line = line.decode()
             if clipped:
-                if line.startswith("\1"):  # align != "left"
+                if line.startswith(placeholder_tail):  # align != "left"
                     widget_index = text_canv_content[row_index][0][0]
                     widget, width, start_pos = embedded[widget_index]
                     tail_canv = widget.render((width, 1), focus)
@@ -253,7 +297,7 @@ class TextEmbed(urwid.Text):
         #   wrt the layout width (maxcol), the position of an embedded widgets on its
         #   respective line should be relative to the start of the line, not considering
         #   alignment.
-        find_placeholders = __class__._uw_placeholder_pattern.finditer
+        find_placeholders = type(self)._UW_PLACEHOLDER_PATTERN.finditer
         embedded_iter = iter(self._uw_embedded)
         self._uw_embedded = [
             # Using `Text.pack()` instead of `match.start()` directly to account for
@@ -263,9 +307,9 @@ class TextEmbed(urwid.Text):
             for match, (widget, width, _) in zip(find_placeholders(line), embedded_iter)
         ]
 
-    @staticmethod
+    @classmethod
     def _uw_substitute_widgets(
-        markup: Markup,
+        cls, markup: Markup
     ) -> Tuple[Markup, List[Tuple[urwid.Widget, int, int]]]:
         """Extracts embedded widgets from *markup* and replace widget markup elements
         with placeholders.
@@ -301,7 +345,9 @@ class TextEmbed(urwid.Text):
                     raise ValueError(f"Not a box widget (got: {markup!r})")
                 if attr <= 0:
                     raise ValueError(f"Invalid widget width (got: {attr!r})")
-                new_markup.append((len(embedded), "\0" + "\1" * (attr - 1)))
+                new_markup.append(
+                    (len(embedded), placeholder_head + placeholder_tail * (attr - 1))
+                )
                 embedded.append((markup, attr, 0))
             else:
                 # Normalize text type to `str` since other parts of this class use
@@ -312,12 +358,15 @@ class TextEmbed(urwid.Text):
 
         embedded = []
         new_markup = []
+        placeholder_head = cls.PLACEHOLDER_HEAD
+        placeholder_tail = cls.PLACEHOLDER_TAIL
         recurse_markup(None, markup)
 
         return new_markup, embedded
 
-    @staticmethod
+    @classmethod
     def _uw_embed(
+        cls,
         line: str,
         line_canv: urwid.CompositeCanvas,
         embedded_iter: Iterator[Tuple[urwid.Widget, int, int]],
@@ -361,7 +410,7 @@ class TextEmbed(urwid.Text):
             #   the tail
             # - Only one possible occurence of a tail per line
             # - Might be preceded by padding spaces when `align != "left"`
-            _, padding, tail_string, line = __class__._uw_tail_pattern.split(line)
+            _, padding, tail_string, line = cls._UW_TAIL_PATTERN.split(line)
 
             if padding:
                 # Can use `len(padding)` since all characters should be spaces
@@ -384,7 +433,7 @@ class TextEmbed(urwid.Text):
                 return urwid.CanvasJoin(canvases), tail
             tail = None
 
-        placeholder_pattern = __class__._uw_placeholder_pattern
+        placeholder_pattern = cls._UW_PLACEHOLDER_PATTERN
 
         for part in placeholder_pattern.split(line):
             if not part:
