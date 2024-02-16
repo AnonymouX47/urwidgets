@@ -78,15 +78,17 @@ class TextEmbed(urwid.Text):
         Going a step further, embeddded widgets can be swapped by using
         ``urwid.WidgetPlaceholder`` but their widths will remain the same.
 
-        NOTE:
-            - Every embedded widget must be a box widget and is always rendered with
-              size ``(width, 1)``.  :py:class:`urwid.Filler` can be used to wrap flow
-              widgets.
-            - Each embedded widgets are treated as a single WORD (i.e containing no
-              whitespace). Therefore, consecutive embedded widgets are also treated as
-              a single WORD. This affects the "space" wrap mode.
-            - After updating or swapping an embedded widget, this widget's canvases
-              should be invalidated to ensure it re-renders.
+        .. note::
+
+           - Every embedded widget must be a box widget and is always rendered with
+             size ``(width, 1)``.  :py:class:`urwid.Filler` can be used to wrap flow
+             widgets.
+           - As regards the "space" wrap mode, each embedded widget is treated as a
+             single WORD (i.e containing no whitespace). In other words, whitespace
+             within embedded widgets do not influence wrapping.
+           - After updating or swapping an embedded widget, the containing
+             :py:class:`TextEmbed` widget's canvases should be invalidated to ensure
+             it re-renders.
 
     Raises:
         TypeError: A widget markup element has a non-integer display attribute.
@@ -490,7 +492,7 @@ def parse_text(
     Whenever any of the given RegEx patterns matches a **non-empty** substring of
     *text*, *repl* is called with the following arguments (in the given order):
 
-    - the :py:class:`re.Pattern` object that matched the substring
+    - the :py:class:`~re.Pattern` object that matched the substring
     - a tuple containing the match groups
 
       - starting with the whole match,
@@ -498,7 +500,7 @@ def parse_text(
         groups are in the pattern, if any (``None`` for each group that didn't
         participate in the match)
 
-    - a tuple containing the indexes of the start and end of the substring
+    - a tuple containing the span (start and end indexes) of the substring
     - *repl_args* unpacked
     - *repl_kwargs* unpacked
 
