@@ -165,17 +165,28 @@ class HyperlinkCanvas(urwid.Canvas):
         return self._uw_text_canv.cols()
 
     def content(
-        self, *args, **kwargs
+        self,
+        trim_left: int = 0,
+        trim_top: int = 0,
+        cols: int | None = None,
+        rows: int | None = None,
+        attr: DisplayAttribute = None,
     ) -> Generator[List[Tuple[DisplayAttribute, Optional[str], bytes]], None, None]:
         # There can only be one line since wrap="ellipsis" and the text was checked
         # to not contain "\n".
-        content_line = next(self._uw_text_canv.content(*args, **kwargs))
+        content_line = next(
+            self._uw_text_canv.content(trim_left, trim_top, cols, rows, attr)
+        )
 
         if isinstance(content_line[0][0], _Attr):
             hyperlink_text, *padding = content_line
+            link_attr = hyperlink_text[0].attr
             yield [
                 (None, "U", START % (self._uw_id, self._uw_uri)),
-                (hyperlink_text[0].attr, *hyperlink_text[1:]),
+                (
+                    attr.get(link_attr, link_attr) if attr else link_attr,
+                    *hyperlink_text[1:],
+                ),
                 (None, "U", END),
                 *padding,  # if any
             ]
