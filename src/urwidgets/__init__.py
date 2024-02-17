@@ -34,7 +34,7 @@ from .text_embed import (
     parse_text,
 )
 
-version_info = (0, 2, 0)
+version_info = (0, 3, 0, "dev")
 
 # Follows https://semver.org/spec/v2.0.0.html
 __version__ = ".".join(map(str, version_info[:3]))
