@@ -4,4 +4,4 @@ flake8==7.0.0;python_version>="3.8.1"
 flake8==5.0.4;python_version<"3.8.1"
 isort[colors]==5.13.2;python_version>="3.8"
 isort[colors]==5.11.5;python_version<"3.8"
-urwid==2.5.3
+urwid==2.6.1
