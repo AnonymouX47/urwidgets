@@ -38,7 +38,7 @@ pip install git+https://github.com/AnonymouX47/urwidgets.git
 
 **If you want to use this library in a project while it's still on version zero, ensure you pin the dependency to a specific minor version e.g `>=0.1,<0.2`.**
 
-See the [docs](https://urwidgets.readthedocs.io) for the API Reference.
+See the [docs](https://urwidgets.readthedocs.io) for the API Reference (with usage examples).
 
 ## Contribution
 
