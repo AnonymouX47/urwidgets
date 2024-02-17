@@ -57,6 +57,33 @@ class Hyperlink(urwid.WidgetWrap):
     separate by any terminal emulator that correctly implements the feature. Also, if a
     hyperlink is wrapped or clipped, it shouldn't break.
 
+    .. collapse:: Examples:
+
+       >>> from urwidgets import Hyperlink
+       >>>
+       >>> url = "https://urwid.org"
+       >>>
+       >>> # The hyperlinks in the outputs should be highlighted on mouse hover
+       >>> # and clickable (in the terminal), if supported.
+       >>>
+       >>> # Raw URI
+       >>> link = Hyperlink(url)
+       >>> canv = link.render(len(url))
+       >>> print(canv.text[0].decode())
+       https://urwid.org
+       >>>
+       >>> # Clipped (with an ellipsis appended) when the render width (maxcols) is
+       >>> # shorter than the link text
+       >>> canv = link.render(len(url) - 4)
+       >>> print(canv.text[0].decode())
+       https://urwid…
+       >>>
+       >>> # URI with custom text
+       >>> hyperlink = Hyperlink(url, text="Urwid Website")
+       >>> canv = hyperlink.render(hyperlink.pack()[:1])
+       >>> print(canv.text[0].decode())
+       Urwid Website
+
     .. seealso::
         - `OSC 8 Specification
           <https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda>`_

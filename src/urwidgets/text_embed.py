@@ -59,18 +59,18 @@ class TextEmbed(urwid.Text):
         display attribute**, where the display attribute is the number of screen
         columns the widget should occupy.
 
-        Examples:
+        .. collapse:: Examples:
 
-        >>> # w1 spans 2 columns
-        >>> TextEmbed(["This widget (", (2, w1), ") spans two columns"])
-        >>> # w1 and w2 span 2 columns
-        >>> TextEmbed(["These widgets (", (2, [w1, w2]), ") span two columns each"])
-        >>> # w1 and w2 span 2 columns, the text in-between has no display attribute
-        >>> TextEmbed([(2, [w1, (None, "and"), w2]), " span two columns each"])
-        >>> # w1 and w2 span 2 columns, text in the middle is red
-        >>> TextEmbed((2, [w1, ("red", " i am red "), w2]))
-        >>> # w1 and w3 span 2 columns, w2 spans 5 columns
-        >>> TextEmbed((2, [w1, (5, w2), w3]))
+           >>> # w1 spans 2 columns
+           >>> TextEmbed(["This widget (", (2, w1), ") spans two columns"])
+           >>> # w1 and w2 span 2 columns
+           >>> TextEmbed(["These widgets (", (2, [w1, w2]), ") span two columns each"])
+           >>> # w1 and w2 span 2 columns, the text in-between has no display attribute
+           >>> TextEmbed([(2, [w1, (None, "and"), w2]), " span two columns each"])
+           >>> # w1 and w2 span 2 columns, text in the middle is red
+           >>> TextEmbed((2, [w1, ("red", " i am red "), w2]))
+           >>> # w1 and w3 span 2 columns, w2 spans 5 columns
+           >>> TextEmbed((2, [w1, (5, w2), w3]))
 
         Visible embedded widgets are always rendered (may be cached) whenever the
         ``TextEmbed`` widget is re-rendered (i.e an uncached render). Hence, this
@@ -94,6 +94,31 @@ class TextEmbed(urwid.Text):
         TypeError: A widget markup element has a non-integer display attribute.
         ValueError: A widget doesn't support box sizing.
         ValueError: A widget has a non-positive width (display attribute).
+
+    .. collapse:: Example:
+
+        >>> from urwidgets import TextEmbed, Hyperlink
+        >>> from urwid import Filler
+        >>>
+        >>> url = "https://urwid.org"
+        >>> this = Hyperlink(url, text="This")
+        >>> link = Hyperlink(url)
+        >>>
+        >>> text_embed = TextEmbed(
+        ...     [
+        ...         (4, Filler(this)),
+        ...         " is a ",
+        ...         ("bold", "link"),
+        ...         " to ",
+        ...         (len(url), Filler(link)),
+        ...     ]
+        ... )
+        >>>
+        >>> canv = text_embed.render(text_embed.pack()[:1])
+        >>> # The hyperlinks (`This` and `https://urwid.org`) should be highlighted
+        >>> # on mouse hover and clickable (in the terminal), if supported.
+        >>> print(canv.text[0].decode())
+        This is a link to https://urwid.org
     """
 
     PLACEHOLDER_HEAD: ClassVar[str] = "\uf8fe"
@@ -508,45 +533,45 @@ def parse_text(
     value returned is *false* (such as ``None`` or an empty string), it is omitted
     from the result.
 
-    Example::
+    .. collapse:: Example:
 
-        import re
-        from urwid import Filler
-        from urwidgets import Hyperlink, TextEmbed, parse_text
-
-        MARKDOWN = {
-            re.compile(r"\*\*(.+?)\*\*"): lambda g: ("bold", g[1]),
-            re.compile("https://[^ ]+"): (
-                lambda g: (min(len(g[0]), 14), Filler(Hyperlink(g[0], "blue")))
-            ),
-            re.compile(r"\[(.+)\]\((.+)\)"): (
-                lambda g: (len(g[1]), Filler(Hyperlink(g[2], "blue", g[1])))
-            ),
-        }
-
-        link = "https://urwid.org"
-        text = f"[This]({link}) is a **link** to {link}"
-        print(text)
-        # Output: [This](https://urwid.org) is a **link** to https://urwid.org
-
-        markup = parse_text(
-            text, MARKDOWN, lambda pattern, groups, span: MARKDOWN[pattern](groups)
-        )
-        print(markup)
-        # Output:
-        # [
-        #   (4, <Filler box widget <Hyperlink flow widget>>),
-        #   ' is a ',
-        #   ('bold', 'link'),
-        #   ' to ',
-        #   (14, <Filler box widget <Hyperlink flow widget>>),
-        # ]
-
-        text_widget = TextEmbed(markup)
-        canv = text_widget.render(text_widget.pack()[:1])
-        print(canv.text[0].decode())
-        # Output: This is a link to https://urwid…
-        # The hyperlinks will be clickable if supported
+        >>> import re
+        >>> from urwid import Filler
+        >>> from urwidgets import Hyperlink, TextEmbed, parse_text
+        >>>
+        >>> MARKDOWN = {
+        >>>     re.compile(r"\*\*(.+?)\*\*"): lambda g: ("bold", g[1]),
+        >>>     re.compile("https://[^ ]+"): (
+        >>>         lambda g: (len(g[0]), Filler(Hyperlink(g[0])))
+        >>>     ),
+        >>>     re.compile(r"\[(.+)\]\((.+)\)"): (
+        >>>         lambda g: (len(g[1]), Filler(Hyperlink(g[2], text=g[1])))
+        >>>     ),
+        >>> }
+        >>>
+        >>> link = "https://urwid.org"
+        >>> text = f"[This]({link}) is a **link** to {link}"
+        >>> print(text)
+        [This](https://urwid.org) is a **link** to https://urwid.org
+        >>>
+        >>> markup = parse_text(
+        >>>     text, MARKDOWN, lambda pattern, groups, span: MARKDOWN[pattern](groups)
+        >>> )
+        >>> print(markup)
+        [
+          (4, <Filler box widget <Hyperlink flow widget>>),
+          ' is a ',
+          ('bold', 'link'),
+          ' to ',
+          (17, <Filler box widget <Hyperlink flow widget>>),
+        ]
+        >>>
+        >>> text_widget = TextEmbed(markup)
+        >>> canv = text_widget.render(text_widget.pack()[:1])
+        >>> # The hyperlinks (`This` and `https://urwid.org`) should be highlighted
+        >>> # on mouse hover and clickable (in the terminal), if supported.
+        >>> print(canv.text[0].decode())
+        This is a link to https://urwid.org
 
     NOTE:
         In the case of overlapping matches, the substring that occurs first is matched
