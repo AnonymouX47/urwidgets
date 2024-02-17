@@ -3,6 +3,8 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from sphinx_toolbox.collapse import CollapseNode
+
 from urwidgets import __version__
 
 # -- Project information -----------------------------------------------------
@@ -67,3 +69,8 @@ github_repository = "urwidgets"
 
 # # -- sphinx_toolbox-more_autosummary ----------------------------------------------
 autodocsumm_member_order = "bysource"
+
+# # -- sphinx_toolbox.collapse -------------------------------------------------
+
+# Fixes some weird `AttributeError` when building on `ReadTheDocs`
+CollapseNode.label = None
