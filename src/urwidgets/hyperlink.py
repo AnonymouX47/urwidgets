@@ -43,13 +43,14 @@ class Hyperlink(urwid.WidgetWrap):
         TypeError: An argument is of an unexpected type.
         ValueError: An argument is of an expected type but of an unexpected value
 
-    This widget always renders a single line. If the widget is rendered with a width
-    less than the length of the hyperlink text, it is clipped at the right end with an
-    ellipsis (\u2026) appended. On the other hand, if rendered with a width greater,
+    This widget always renders a **single line**, with *left* alignment and the
+    *ellipsis* wrap mode of :py:class:`urwid.Text` i.e if the widget is rendered with
+    a width less than the length of the hyperlink text, it is clipped at the right end
+    with an ellipsis appended; on the other hand, if rendered with a width greater,
     it is padded with spaces on the right end.
 
     This widget is intended to be embedded in a :py:class:`~urwidgets.TextEmbed` widget
-    to combine it with pure text or other widgets but may also be used otherwise.
+    to combine it with pure text or other widgets but may as well be used otherwise.
 
     This widget utilizes the ``OSC 8`` escape sequence implemented by a sizable number
     of mainstream terminal emulators. It utilizes the escape sequence in such a way that
@@ -85,10 +86,18 @@ class Hyperlink(urwid.WidgetWrap):
        Urwid Website
 
     .. seealso::
-        - `OSC 8 Specification
-          <https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda>`_
-        - `OSC 8 adoption in terminal emulators
-          <https://github.com/Alhadis/OSC8-Adoption>`_
+
+       `OSC 8 Specification \
+       <https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda>`_
+          Official specification for hyperlinks in terminals.
+
+       `OSC 8 adoption in terminal emulators \
+       <https://github.com/Alhadis/OSC8-Adoption>`_
+          Documentation of the adoption of the feature across terminal emulators and
+          terminal-based applications.
+
+       :py:class:`~urwidgets.TextEmbed`
+          A widget that enables the use of hyperlinks amidst normal text.
     """
 
     no_cache = ["render"]

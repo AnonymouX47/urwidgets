@@ -75,8 +75,8 @@ class TextEmbed(urwid.Text):
         Visible embedded widgets are always rendered (may be cached) whenever the
         ``TextEmbed`` widget is re-rendered (i.e an uncached render). Hence, this
         allows for dynamic parts of text without updating the entire widget.
-        Going a step further, embeddded widgets can be swapped by using
-        ``urwid.WidgetPlaceholder`` but their widths will remain the same.
+        Going a step further, embeddded widgets can be swapped using
+        :py:class:`urwid.WidgetPlaceholder` but their widths will remain the same.
 
         .. note::
 
@@ -119,6 +119,11 @@ class TextEmbed(urwid.Text):
         >>> # on mouse hover and clickable (in the terminal), if supported.
         >>> print(canv.text[0].decode())
         This is a link to https://urwid.org
+
+    .. seealso::
+
+       :py:func:`parse_text`
+          Parses a string into a text/widget markup that can be used with this class.
     """
 
     PLACEHOLDER_HEAD: ClassVar[str] = "\uf8fe"
@@ -492,7 +497,7 @@ def parse_text(
     *repl_args: Any,
     **repl_kwargs: Any,
 ) -> Markup:
-    r"""Parses a string into a text/widget markup list.
+    r"""Parses a string into a text/widget markup.
 
     Args:
         text: The string to parse.
