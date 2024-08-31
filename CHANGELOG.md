@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.2.1] - 2024-08-31
+### Fixed
+- `TextEmbed` text width computation ([f8c83af]).
+
+[f8c83af]: https://github.com/AnonymouX47/urwidgets/commit/f8c83af25ad95a439448bc5acec0111a2b10efdb
+
+
 ## [0.2.0] - 2024-02-17
 ### Fixed
 - `TextEmbed` widget placeholders ([#2]).
