@@ -114,7 +114,7 @@ class TextEmbed(urwid.Text):
         ...     ]
         ... )
         >>>
-        >>> canv = text_embed.render(text_embed.pack()[:1])
+        >>> canv = text_embed.render(())
         >>> # The hyperlinks (`This` and `https://urwid.org`) should be highlighted
         >>> # on mouse hover and clickable (in the terminal), if supported.
         >>> print(canv.text[0].decode())
@@ -573,7 +573,7 @@ def parse_text(
         ]
         >>>
         >>> text_widget = TextEmbed(markup)
-        >>> canv = text_widget.render(text_widget.pack()[:1])
+        >>> canv = text_widget.render(())
         >>> # The hyperlinks (`This` and `https://urwid.org`) should be highlighted
         >>> # on mouse hover and clickable (in the terminal), if supported.
         >>> print(canv.text[0].decode())

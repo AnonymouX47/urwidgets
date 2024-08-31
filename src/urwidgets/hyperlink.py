@@ -69,19 +69,19 @@ class Hyperlink(urwid.WidgetWrap):
        >>>
        >>> # Raw URI
        >>> link = Hyperlink(url)
-       >>> canv = link.render(len(url))
+       >>> canv = link.render(())
        >>> print(canv.text[0].decode())
        https://urwid.org
        >>>
        >>> # Clipped (with an ellipsis appended) when the render width (maxcols) is
        >>> # shorter than the link text
-       >>> canv = link.render(len(url) - 4)
+       >>> canv = link.render((len(url) - 4,))
        >>> print(canv.text[0].decode())
        https://urwid…
        >>>
        >>> # URI with custom text
        >>> hyperlink = Hyperlink(url, text="Urwid Website")
-       >>> canv = hyperlink.render(hyperlink.pack()[:1])
+       >>> canv = hyperlink.render(())
        >>> print(canv.text[0].decode())
        Urwid Website
 
