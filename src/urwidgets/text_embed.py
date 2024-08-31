@@ -332,9 +332,9 @@ class TextEmbed(urwid.Text):
         find_placeholders = type(self)._UW_PLACEHOLDER_PATTERN.finditer
         embedded_iter = iter(self._uw_embedded)
         self._uw_embedded = [
-            # Using `Text.pack()` instead of `match.start()` directly to account for
-            # wide characters
-            (widget, width, urwid.Text(line[: match.start()]).pack()[0])
+            # Using `calc_width()` instead of `match.start()` directly to account for
+            # wide and zero-width characters
+            (widget, width, urwid.calc_width(line[: match.start()], 0, match.start()))
             for line in super().get_text()[0].splitlines()
             for match, (widget, width, _) in zip(find_placeholders(line), embedded_iter)
         ]
@@ -480,8 +480,9 @@ class TextEmbed(urwid.Text):
                 if len(part) != width:
                     tail = (width - len(part), canv)
             else:
-                # Should't use `len(part)` because of wide characters
-                maxcol = urwid.Text(part).pack()[0]
+                # Using `calc_width()` instead of `len(part)` directly to account for
+                # wide and zero-width characters
+                maxcol = urwid.calc_width(part, 0, len(part))
                 canv = urwid.CompositeCanvas(line_canv)
                 canv.pad_trim_left_right(-line_index, 0)
                 canvases.append((canv, None, focus, maxcol))
