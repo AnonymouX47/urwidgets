@@ -137,17 +137,22 @@ class TextEmbed(urwid.Text):
     - occupies exactly one column on a terminal screen.
     - is guaranteed to not occur in the text content of the widget, if any.
 
-    Either or both may only be overriden on subclasses - during their creation,
-    not after - as in::
+    Either or both may only be overriden on **subclasses (during their creation,
+    not after)**, as in::
 
        class TextEmbedSub(TextEmbed):
            PLACEHOLDER_HEAD = "="
            PLACEHOLDER_TAIL = "-"
 
-    HINT:
+    NOTE:
         In most cases, the defaults should be sufficient. There's no need to override
         these except it's possible for the default values to occur in the widget's
         text content (if any), which is highly unlikely.
+
+        That said, the default values should be considered implementation detail;
+        hence, may change at any time without notice. They're only provided to help
+        the user avoid conflicts with actual text content. If the values are depended
+        upon, then they should be overriden on a subclass, as described above.
     """
 
     # In case a placeholder gets wrapped or clipped, this pattern will only match the
