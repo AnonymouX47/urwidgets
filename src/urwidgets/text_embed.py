@@ -339,7 +339,7 @@ class TextEmbed(urwid.Text):
         self._uw_embedded = [
             # Using `calc_width()` instead of `match.start()` directly to account for
             # wide and zero-width characters
-            (widget, width, urwid.calc_width(line[: match.start()], 0, match.start()))
+            (widget, width, urwid.calc_width(line, 0, match.start()))
             for line in super().get_text()[0].splitlines()
             for match, (widget, width, _) in zip(find_placeholders(line), embedded_iter)
         ]
